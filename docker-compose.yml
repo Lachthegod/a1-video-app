@@ -1,0 +1,36 @@
+services:
+  video-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=video-db
+      - DB_USER=root
+      - DB_PASSWORD=yourpassword
+      - DB_NAME=video
+    depends_on:
+      - video-db
+    volumes:
+      - ./uploads:/app/uploads  # persist uploaded & transcoded videos
+
+  video-db:
+    image: mariadb:11
+    environment:
+      - MYSQL_ROOT_PASSWORD=yourpassword
+      - MYSQL_DATABASE=video
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql  # persist database
+
+  video-client:
+    build:
+      context: ./videocli
+      dockerfile: ../Dockerfile.client
+    ports:
+      - "8080:8080"
+    depends_on:
+      - video-api
+
+volumes:
+  db_data:

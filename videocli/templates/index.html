@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Client</title>
+</head>
+<body>
+  <h1>Video API Client</h1>
+
+  <h2>Upload Video</h2>
+  <form action="/upload" enctype="multipart/form-data" method="post">
+    <input type="file" name="file">
+    <button type="submit">Upload</button>
+  </form>
+
+  <h2>Videos</h2>
+  <ul>
+    {% for v in videos %}
+      <li>
+        {{ v.filename }} - {{ v.status }} {% if v.format %} ({{ v.format }}) {% endif %}
+
+        <!-- Transcode button -->
+        <form action="/transcode/{{ v.id }}/mp4" method="post" style="display:inline;">
+          <button type="submit">Transcode to mp4</button>
+        </form>
+
+        <form action="/delete/{{ v.id }}" method="post" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

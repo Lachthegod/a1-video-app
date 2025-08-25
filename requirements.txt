@@ -1,0 +1,7 @@
+fastapi           # REST API framework
+uvicorn           # ASGI server
+mariadb           # Connect to MariaDB
+python-multipart  # For handling file uploads
+ffmpeg-python     # Python wrapper for FFmpeg
+pydantic          # For data validation (optional, FastAPI already uses it)
+requests          # Optional, if you want to fetch external video URLs
