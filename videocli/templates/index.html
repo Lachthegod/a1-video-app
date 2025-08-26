@@ -12,22 +12,44 @@
     <button type="submit">Upload</button>
   </form>
 
-  <h2>Videos</h2>
+  <h2>Uploaded Videos</h2>
   <ul>
-    {% for v in videos %}
+    {% for v in videos if v.status == 'uploaded' %}
       <li>
-        {{ v.filename }} - {{ v.status }} {% if v.format %} ({{ v.format }}) {% endif %}
-
-        <!-- Transcode button -->
+        {{ v.filename }} - {{ v.status }}
         <form action="/transcode/{{ v.id }}/mp4" method="post" style="display:inline;">
           <button type="submit">Transcode to mp4</button>
         </form>
-
         <form action="/delete/{{ v.id }}" method="post" style="display:inline;">
           <button type="submit">Delete</button>
         </form>
       </li>
     {% endfor %}
   </ul>
+
+  <h2>Transcoding Videos</h2>
+  <ul>
+    {% for v in videos if v.status == 'transcoding' %}
+      <li>
+        {{ v.filename }} - {{ v.status }}
+        <form action="/delete/{{ v.id }}" method="post" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <h2>Done Videos</h2>
+  <ul>
+    {% for v in videos if v.status == 'done' %}
+      <li>
+        {{ v.filename }} - {{ v.status }} {% if v.format %} ({{ v.format }}) {% endif %}
+        <form action="/delete/{{ v.id }}" method="post" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+
 </body>
 </html>
