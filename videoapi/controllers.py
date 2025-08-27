@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from videoapi.models import (
     create_video, get_video_by_id, list_videos, update_status, remove_video
 )
@@ -115,3 +115,30 @@ async def delete_video(video_id: int, current_user: dict):
     result = remove_video(video_id)
     return {"message": "Video deleted" if result["deleted"] else "Failed to delete video"}
 
+# Download a video file (original or transcoded)
+def download_video(video_id: int, current_user: dict):
+    video = get_video_by_id(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Only allow owner or admin
+    if video["owner"] != current_user["username"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to download this video")
+    
+    # Determine which file to serve (transcoded if exists, else original)
+    file_path = video["filepath"]
+    base_name, ext = os.path.splitext(file_path)
+    
+    if video.get("format"):
+        transcoded_file = f"{base_name}_transcoded.{video['format']}"
+        if os.path.exists(transcoded_file):
+            file_path = transcoded_file
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+    
+    return FileResponse(
+        path=file_path,
+        filename=os.path.basename(file_path),
+        media_type="video/mp4"
+    )

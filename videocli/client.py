@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Form, UploadFile, File, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+import io
 import httpx
 import jwt
 import uuid
@@ -107,3 +108,19 @@ async def transcode(session_id: str, video_id: int, fmt: str):
         await client.post(f"{API_BASE}/{video_id}/transcode", json={"format": fmt}, headers=headers)
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
+@app.get("/download/{session_id}/{video_id}")
+async def download(session_id: str, video_id: int):
+    token = SESSIONS.get(session_id)
+    if not token:
+        return RedirectResponse("/", status_code=303)
+
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{API_BASE}/{video_id}/download", headers=headers)
+        if resp.status_code != 200:
+            return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+        
+        # Return the video as a streaming response
+        return StreamingResponse(io.BytesIO(resp.content), media_type="video/mp4", headers={
+            "Content-Disposition": f"attachment; filename=video_{video_id}.mp4"
+        })

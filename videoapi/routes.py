@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, status, Body
+from fastapi.responses import FileResponse
 from videoapi.auth import authenticate_user, generate_access_token, get_current_user
+from videoapi.models import get_video_by_id
+import os
 from videoapi.controllers import (
     get_all_videos,
     get_video,
@@ -46,6 +49,22 @@ async def delete_video_route(
             detail="Admins only can delete videos"
         )
     return await delete_video(video_id)
+
+@router.get("/{video_id}/download")
+async def download_video(video_id: int, current_user: dict = Depends(get_current_user)):
+    video = get_video_by_id(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Only allow owner or admin
+    if video["owner"] != current_user["username"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to download this video")
+    
+    if not os.path.exists(video["filepath"]):
+        raise HTTPException(status_code=404, detail="File not found on server")
+    
+    return FileResponse(path=video["filepath"], filename=os.path.basename(video["filepath"]), media_type="video/mp4")
+
 
 @router.post("/login")
 async def login(username: str = Body(...), password: str = Body(...)):
