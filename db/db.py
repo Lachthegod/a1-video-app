@@ -39,7 +39,8 @@ def init_db():
                 filepath VARCHAR(500) NOT NULL,  -- path on disk or cloud
                 status VARCHAR(50) DEFAULT 'uploaded',  -- uploaded, transcoding, done, failed
                 format VARCHAR(20),
-                user_id INT,  -- optional for multi-user system
+                user_id INT, 
+                owner VARCHAR(50), 
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)

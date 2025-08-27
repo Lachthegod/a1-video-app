@@ -1,0 +1,18 @@
+<h1>Admin Dashboard</h1>
+<h2>All Videos</h2>
+<ul>
+  {% for v in videos %}
+    <li>{{ v.filename }} - {{ v.status }} (owner: {{ v.owner }})
+      <form action="/transcode/{{ session_id }}/{{ v.id }}/mp4" method="post">
+        <button type="submit">Transcode</button>
+      </form>
+      <form action="/delete/{{ session_id }}/{{ v.id }}" method="post">
+        <button>Delete</button>
+      </form>
+    </li>
+  {% endfor %}
+</ul>
+<form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
+  <input type="file" name="file">
+  <button>Upload</button>
+</form>

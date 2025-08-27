@@ -1,17 +1,17 @@
 from db.db import get_connection
 import datetime
 
-def create_video(filename, filepath, user_id=None, status="uploaded", format=None):
+def create_video(filename, filepath, owner=None, status="uploaded", format=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO videos (filename, filepath, status, format, user_id) VALUES (?, ?, ?, ?, ?)",
-        (filename, filepath, status, format, user_id)
+        "INSERT INTO videos (filename, filepath, status, format, owner) VALUES (?, ?, ?, ?, ?)",
+        (filename, filepath, status, format, owner)
     )
     conn.commit()
     video_id = cursor.lastrowid
     conn.close()
-    return {"id": video_id, "filename": filename, "status": status, "format": format}
+    return {"id": video_id, "filename": filename, "status": status, "format": format, "owner": owner}
 
 def get_video_by_id(video_id):
     conn = get_connection()

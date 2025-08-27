@@ -40,25 +40,29 @@ def get_video(video_id: int):
         raise HTTPException(status_code=404, detail="Video not found")
     return JSONResponse(content=jsonable_encoder(video))
 
-# Upload a new video
-async def upload_video(request: Request):
+async def upload_video(request: Request, current_user: dict):
     form = await request.form()
     file = form.get("file")
     if not file:
         raise HTTPException(status_code=400, detail="No file uploaded")
             
     upload_dir = "uploads"
-    os.makedirs(upload_dir, exist_ok=True)  # ensures folder exists
+    os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, file.filename)
         
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
         
-    video_record = create_video(filename=file.filename, filepath=file_path)
+    # Save owner in DB
+    video_record = create_video(
+        filename=file.filename, 
+        filepath=file_path,
+        owner=current_user["username"]  
+    )
     return JSONResponse(content=video_record)
 
 # Start transcoding a video (background task)
-async def transcode_video(video_id: int, request: Request, background_tasks: BackgroundTasks):
+async def transcode_video(video_id: int, request: Request, background_tasks: BackgroundTasks, current_user: dict):
     data = await request.json()
     output_format = data.get("format")
     if not output_format:
@@ -67,6 +71,10 @@ async def transcode_video(video_id: int, request: Request, background_tasks: Bac
     video = get_video_by_id(video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
+    
+    if video["owner"] != current_user["username"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to transcode this video")
+
         
     input_path = video["filepath"]
 
@@ -90,15 +98,18 @@ def transcode_and_update(video_id, input_path, output_path, output_format):
     update_status(video_id, status="done" if success else "failed", format=output_format)
 
     
-# Delete a video
-def delete_video(video_id: int):
+async def delete_video(video_id: int, current_user: dict):
     video = get_video_by_id(video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
-    # Remove file from disk
+
+    if video["owner"] != current_user["username"] and current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to modify this video")
+
+
     if os.path.exists(video["filepath"]):
         os.remove(video["filepath"])
 
     result = remove_video(video_id)
     return {"message": "Video deleted" if result["deleted"] else "Failed to delete video"}
+
