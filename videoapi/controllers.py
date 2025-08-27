@@ -53,13 +53,15 @@ async def upload_video(request: Request, current_user: dict):
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
         
-    # Save owner in DB
+    # Save both owner and user_id in DB
     video_record = create_video(
         filename=file.filename, 
         filepath=file_path,
-        owner=current_user["username"]  
+        owner=current_user["username"],  
+        user_id=current_user["id"]      
     )
     return JSONResponse(content=video_record)
+
 
 # Start transcoding a video (background task)
 async def transcode_video(video_id: int, request: Request, background_tasks: BackgroundTasks, current_user: dict):
