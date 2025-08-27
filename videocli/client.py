@@ -59,7 +59,14 @@ async def dashboard(request: Request, session_id: str):
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(f"{API_BASE}/", headers=headers)
-            videos = resp.json()
+            all_videos = resp.json()
+
+            # FILTER VIDEOS
+            if role == "admin":
+                videos = all_videos  # admin sees everything
+            else:
+                videos = [v for v in all_videos if v["owner"] == username]
+
     except Exception as e:
         print("Error fetching videos:", e)
 
@@ -99,3 +106,4 @@ async def transcode(session_id: str, video_id: int, fmt: str):
     async with httpx.AsyncClient() as client:
         await client.post(f"{API_BASE}/{video_id}/transcode", json={"format": fmt}, headers=headers)
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+

@@ -1,7 +1,7 @@
 <h1>User Dashboard</h1>
 <h2>Your Videos</h2>
 <ul>
-  {% for v in videos if v.owner == session_id %}
+  {% for v in videos if v.owner == username %}
     <li>{{ v.filename }} - {{ v.status }}
       <form action="/transcode/{{ session_id }}/{{ v.id }}/mp4" method="post">
         <button type="submit">Transcode</button>
