@@ -3,26 +3,24 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import httpx
 import jwt
+import uuid
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 API_BASE = "http://video-api:3000/videos"
 SESSIONS = {}  # {session_id: token}
-SECRET_KEY = "supersecretkey"  # same as backend auth.py
+SECRET_KEY = "supersecretkey"  # must match backend auth.py
 ALGORITHM = "HS256"
 
 
-# Decode JWT to get username and role
 def decode_jwt(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
-        role = payload.get("role", "user")  # default to user if not present
+        role = payload.get("role", "user")
         return username, role
-    except jwt.ExpiredSignatureError:
-        return None, None
-    except jwt.InvalidTokenError:
+    except jwt.PyJWTError:
         return None, None
 
 
@@ -39,8 +37,11 @@ async def login(request: Request, username: str = Form(...), password: str = For
             return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
         token = resp.json()["authToken"]
 
-    SESSIONS[username] = token
-    return RedirectResponse(f"/dashboard/{username}", status_code=303)
+    # generate random session ID
+    session_id = str(uuid.uuid4())
+    SESSIONS[session_id] = token
+
+    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
 
 @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
@@ -58,13 +59,18 @@ async def dashboard(request: Request, session_id: str):
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(f"{API_BASE}/", headers=headers)
-            resp.raise_for_status()
             videos = resp.json()
     except Exception as e:
         print("Error fetching videos:", e)
 
     template_name = "dashboard_admin.html" if role == "admin" else "dashboard_user.html"
-    return templates.TemplateResponse(template_name, {"request": request, "videos": videos, "session_id": username})
+    return templates.TemplateResponse(template_name, {
+        "request": request,
+        "videos": videos,
+        "session_id": session_id,
+        "username": username,
+        "role": role
+    })
 
 
 @app.post("/upload/{session_id}")

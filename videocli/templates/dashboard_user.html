@@ -12,6 +12,7 @@
     </li>
   {% endfor %}
 </ul>
+
 <form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
   <input type="file" name="file">
   <button>Upload</button>
