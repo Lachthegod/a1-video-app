@@ -6,7 +6,7 @@ services:
     environment:
       - DB_HOST=video-db
       - DB_USER=root
-      - DB_PASSWORD=yourpassword
+      - DB_PASSWORD=deeznutz
       - DB_NAME=video
     depends_on:
       - video-db
@@ -16,7 +16,7 @@ services:
   video-db:
     image: mariadb:11
     environment:
-      - MYSQL_ROOT_PASSWORD=yourpassword
+      - MYSQL_ROOT_PASSWORD=deeznutz
       - MYSQL_DATABASE=video
     ports:
       - "3306:3306"

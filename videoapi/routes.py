@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from videoapi.auth import authenticate_user, generate_access_token, get_current_user
 from videoapi.models import get_video_by_id
 import os
+import json
 from videoapi.controllers import (
     get_all_videos,
     get_video,
@@ -66,3 +67,17 @@ async def login(username: str = Body(...), password: str = Body(...)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = generate_access_token(username)
     return {"authToken": token}
+
+@router.get("/tasks")
+async def get_transcoding_tasks(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+
+    LOG_FILE = "/usr/src/app/transcode_tasks.json"
+    try:
+        with open(LOG_FILE, "r") as f:
+            tasks = json.load(f)
+    except FileNotFoundError:
+        tasks = []
+
+    return tasks

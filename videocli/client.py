@@ -5,9 +5,12 @@ import io
 import httpx
 import jwt
 import uuid
+import json
+import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+LOG_FILE = os.environ.get("TASK_LOG_FILE", "/usr/src/app/transcode_tasks.json")
 
 API_BASE = "http://video-api:3000/videos"
 SESSIONS = {} 
@@ -135,12 +138,11 @@ async def tasks_dashboard(request: Request, session_id: str):
     if role != "admin":
         raise HTTPException(status_code=403, detail="Admins only")
 
-    headers = {"Authorization": f"Bearer {token}"}
-    tasks = []
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(f"{API_BASE}/tasks", headers=headers)
-        if resp.status_code == 200:
-            tasks = resp.json()
+    try:
+        with open(LOG_FILE) as f:
+            tasks = json.load(f)
+    except FileNotFoundError:
+        tasks = []
 
     return templates.TemplateResponse("dashboard_tasks.html", {
         "request": request,
