@@ -40,6 +40,9 @@
 </head>
 <body>
   <h1>User Dashboard</h1>
+    <form action="/logout/{{ session_id }}" method="get" style="margin-bottom:20px;">
+      <button type="submit" style="background:#6c757d">Sign Out</button>
+    </form>
   <h2>Your Videos</h2>
 
   {% for v in videos if v.owner == username %}

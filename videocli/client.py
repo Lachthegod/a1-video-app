@@ -175,3 +175,9 @@ async def update_metadata(session_id: str, video_id: int, title: str = Form(None
         await client.put(f"{API_BASE}/{video_id}", json=payload, headers=headers)
 
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
+@app.get("/logout/{session_id}")
+async def logout(session_id: str):
+    SESSIONS.pop(session_id, None)
+    # Redirect to login page
+    return RedirectResponse("/", status_code=303)

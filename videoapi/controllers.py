@@ -12,7 +12,7 @@ import ffmpeg
 router = APIRouter()
 
 
-def transcode_video_file(input_path, output_path, output_format):
+def transcode_video_file(input_path, output_path, output_format="mov"):
     try:
         (
             ffmpeg
