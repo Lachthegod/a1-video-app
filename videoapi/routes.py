@@ -14,7 +14,7 @@ from videoapi.controllers import (
 
 router = APIRouter()
 router.get("/", response_model=list)(get_all_videos)
-router.get("/{video_id}")(get_video)
+
 
 
 
@@ -57,6 +57,8 @@ async def transcode_endpoint(
     current_user: dict = Depends(get_current_user)
 ):
     return await transcode_video(video_id, request, background_tasks, current_user)
+
+router.get("/{video_id}")(get_video)
 
 @router.delete("/{video_id}")
 async def delete_video_route(
