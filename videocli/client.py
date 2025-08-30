@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, UploadFile, File, Request
+from fastapi import FastAPI, Form, UploadFile, File, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 import io
@@ -123,3 +123,27 @@ async def download(session_id: str, video_id: int):
         return StreamingResponse(io.BytesIO(resp.content), media_type="video/mp4", headers={
             "Content-Disposition": f"attachment; filename=video_{video_id}.mp4"
         })
+    
+    
+@app.get("/tasks/{session_id}", response_class=HTMLResponse)
+async def tasks_dashboard(request: Request, session_id: str):
+    token = SESSIONS.get(session_id)
+    if not token:
+        return RedirectResponse("/", status_code=303)
+
+    username, role = decode_jwt(token)
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+
+    import json
+    try:
+        with open("videoapi/transcode_tasks.json") as f:
+            tasks = json.load(f)
+    except FileNotFoundError:
+        tasks = []
+
+    return templates.TemplateResponse("dashboard_tasks.html", {
+        "request": request,
+        "tasks": tasks,
+        "session_id": session_id
+    })

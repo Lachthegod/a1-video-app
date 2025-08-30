@@ -4,16 +4,16 @@
   <title>Admin Dashboard</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #333; }
-    .video-card {
+    h1, h2 { color: #333; }
+    .video-card, .task-card {
       border: 1px solid #ccc;
       border-radius: 8px;
       padding: 15px;
       margin-bottom: 10px;
       background: #f9f9f9;
     }
-    .video-card h3 { margin: 0 0 10px 0; }
-    .video-actions form, .video-actions a { display: inline-block; margin-right: 8px; }
+    .video-card h3, .task-card h3 { margin: 0 0 10px 0; }
+    .video-actions form, .video-actions a, .task-actions form { display: inline-block; margin-right: 8px; }
     .upload-box {
       margin-top: 20px;
       padding: 15px;
@@ -30,12 +30,18 @@
       cursor: pointer;
     }
     button:hover { background: #0056b3; }
+    button.delete { background: #dc3545; }
+    button.download { background: #28a745; }
+    button.rerun { background: #ffc107; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
   </style>
 </head>
 <body>
   <h1>Admin Dashboard</h1>
-  <h2>All Videos</h2>
 
+  <h2>All Videos</h2>
   {% for v in videos %}
   <div class="video-card">
     <h3>{{ v.filename }}</h3>
@@ -46,10 +52,10 @@
         <button type="submit">Transcode</button>
       </form>
       <form action="/delete/{{ session_id }}/{{ v.id }}" method="post">
-        <button type="submit" style="background:#dc3545">Delete</button>
+        <button type="submit" class="delete">Delete</button>
       </form>
       <a href="/download/{{ session_id }}/{{ v.id }}">
-        <button type="button" style="background:#28a745">Download</button>
+        <button type="button" class="download">Download</button>
       </a>
     </div>
   </div>
@@ -61,5 +67,40 @@
       <button type="submit">Upload</button>
     </form>
   </div>
+
+  <h2>Transcoding Tasks</h2>
+  {% if tasks %}
+  <table>
+    <tr>
+      <th>Video ID</th>
+      <th>User ID</th>
+      <th>Format</th>
+      <th>Status</th>
+      <th>Error</th>
+      <th>Timestamp</th>
+      <th>Actions</th>
+    </tr>
+    {% for t in tasks %}
+    <tr>
+      <td>{{ t.video_id }}</td>
+      <td>{{ t.user_id }}</td>
+      <td>{{ t.format }}</td>
+      <td>{{ t.status }}</td>
+      <td>{{ t.error or '' }}</td>
+      <td>{{ t.timestamp }}</td>
+      <td>
+        {% if t.status == 'failed' %}
+        <form action="/rerun/{{ session_id }}/{{ t.video_id }}/{{ t.format }}" method="post">
+          <button type="submit" class="rerun">Re-run</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p>No tasks yet.</p>
+  {% endif %}
+
 </body>
 </html>
