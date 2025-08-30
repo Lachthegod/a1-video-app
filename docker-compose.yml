@@ -11,7 +11,7 @@ services:
     depends_on:
       - video-db
     volumes:
-      - ./uploads:/app/uploads  # persist uploaded & transcoded videos
+      - ./uploads:/app/uploads 
 
   video-db:
     image: mariadb:11
@@ -21,7 +21,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - db_data:/var/lib/mysql  # persist database
+      - db_data:/var/lib/mysql 
 
   video-client:
     build:

@@ -10,8 +10,8 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 API_BASE = "http://video-api:3000/videos"
-SESSIONS = {}  # {session_id: token}
-SECRET_KEY = "supersecretkey"  # must match backend auth.py
+SESSIONS = {} 
+SECRET_KEY = "DeezNutz"  #match it in auth.py, but change it for future assessments
 ALGORITHM = "HS256"
 
 
@@ -38,7 +38,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
             return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
         token = resp.json()["authToken"]
 
-    # generate random session ID
     session_id = str(uuid.uuid4())
     SESSIONS[session_id] = token
 
@@ -62,9 +61,8 @@ async def dashboard(request: Request, session_id: str):
             resp = await client.get(f"{API_BASE}/", headers=headers)
             all_videos = resp.json()
 
-            # FILTER VIDEOS
             if role == "admin":
-                videos = all_videos  # admin sees everything
+                videos = all_videos  #admin gets access to every vid
             else:
                 videos = [v for v in all_videos if v["owner"] == username]
 
@@ -90,7 +88,6 @@ async def upload(session_id: str, file: UploadFile = File(...)):
         await client.post(f"{API_BASE}/", files=form, headers=headers)
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
-
 @app.post("/delete/{session_id}/{video_id}")
 async def delete(session_id: str, video_id: int):
     token = SESSIONS.get(session_id)
@@ -100,6 +97,7 @@ async def delete(session_id: str, video_id: int):
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
 
+
 @app.post("/transcode/{session_id}/{video_id}/{fmt}")
 async def transcode(session_id: str, video_id: int, fmt: str):
     token = SESSIONS.get(session_id)
@@ -107,6 +105,8 @@ async def transcode(session_id: str, video_id: int, fmt: str):
     async with httpx.AsyncClient() as client:
         await client.post(f"{API_BASE}/{video_id}/transcode", json={"format": fmt}, headers=headers)
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
+
 
 @app.get("/download/{session_id}/{video_id}")
 async def download(session_id: str, video_id: int):
@@ -120,7 +120,6 @@ async def download(session_id: str, video_id: int):
         if resp.status_code != 200:
             return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
         
-        # Return the video as a streaming response
         return StreamingResponse(io.BytesIO(resp.content), media_type="video/mp4", headers={
             "Content-Disposition": f"attachment; filename=video_{video_id}.mp4"
         })

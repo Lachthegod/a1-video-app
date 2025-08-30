@@ -3,11 +3,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from datetime import datetime, timedelta, timezone
 
-SECRET_KEY = "supersecretkey"  # change for production
+SECRET_KEY = "DeezNutz"  # Will need to change for future assessments
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Add user ID to each user
+# Hard coded admin and user accounts, shows in web client too
 users = {
     "admin": {"id": 1, "password": "admin", "role": "admin"},
     "user1": {"id": 2, "password": "password1", "role": "user"},

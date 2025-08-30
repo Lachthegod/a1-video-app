@@ -6,14 +6,13 @@ from videoapi.models import (
 )
 import os
 import shutil
-import ffmpeg  # Python wrapper for FFmpeg
+import ffmpeg  
 
 router = APIRouter()
 
 
 def transcode_video_file(input_path, output_path, output_format):
     try:
-        # Force CPU-intensive re-encoding
         (
             ffmpeg
             .input(input_path)
@@ -33,7 +32,7 @@ def get_all_videos():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get a video by ID
+
 def get_video(video_id: int):
     video = get_video_by_id(video_id)
     if not video:
@@ -52,8 +51,7 @@ async def upload_video(request: Request, current_user: dict):
         
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
-        
-    # Save both owner and user_id in DB
+
     video_record = create_video(
         filename=file.filename, 
         filepath=file_path,
@@ -63,7 +61,9 @@ async def upload_video(request: Request, current_user: dict):
     return JSONResponse(content=video_record)
 
 
-# Start transcoding a video (background task)
+
+
+# Start transcoding a video 
 async def transcode_video(video_id: int, request: Request, background_tasks: BackgroundTasks, current_user: dict):
     data = await request.json()
     output_format = data.get("format")
@@ -86,11 +86,7 @@ async def transcode_video(video_id: int, request: Request, background_tasks: Bac
     os.makedirs("uploads", exist_ok=True)
     
     output_path = os.path.join("uploads", output_filename)
-
-    # Update status to transcoding
     update_status(video_id, status="transcoding")
-    
-    # Run transcoding in background
     background_tasks.add_task(transcode_and_update, video_id, input_path, output_path, output_format)
     return {"message": "Transcoding started", "video_id": video_id}
 
@@ -115,17 +111,15 @@ async def delete_video(video_id: int, current_user: dict):
     result = remove_video(video_id)
     return {"message": "Video deleted" if result["deleted"] else "Failed to delete video"}
 
-# Download a video file (original or transcoded)
+#Download, need to fix for .mov
 def download_video(video_id: int, current_user: dict):
     video = get_video_by_id(video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
-    # Only allow owner or admin
+
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to download this video")
-    
-    # Determine which file to serve (transcoded if exists, else original)
+
     file_path = video["filepath"]
     base_name, ext = os.path.splitext(file_path)
     

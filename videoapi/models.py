@@ -29,7 +29,6 @@ def get_video_by_id(video_id):
     conn.close()
     return dict(zip(columns, row)) if row else None
 
-
 def list_videos(user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
@@ -46,10 +45,12 @@ def list_videos(user_id=None):
         video = dict(zip(columns, row))
         for key, value in video.items():
             if isinstance(value, datetime.datetime):
-                video[key] = value.isoformat()  # Convert datetime to ISO string
+                video[key] = value.isoformat() 
         videos.append(video)
 
     return videos
+
+
 
 def update_status(video_id, status, format=None):
     conn = get_connection()
@@ -69,6 +70,9 @@ def update_status(video_id, status, format=None):
     conn.close()
     return {"updated": updated}
     
+
+
+
     
 def remove_video(video_id):
     conn = get_connection()

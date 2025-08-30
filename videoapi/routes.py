@@ -12,22 +12,17 @@ from videoapi.controllers import (
 )
 
 router = APIRouter()
-
-# List all videos (public)
 router.get("/", response_model=list)(get_all_videos)
-
-# Get a specific video by ID (public)
 router.get("/{video_id}")(get_video)
 
-# Upload a new video (requires login)
+
 @router.post("/")
 async def upload_video_route(
     request: Request,
-    current_user: dict = Depends(get_current_user)  # protect with JWT
+    current_user: dict = Depends(get_current_user)  #JWT prtection and transcode, delete (admin)
 ):
     return await upload_video(request, current_user)
 
-# Transcode a video (requires login)
 @router.post("/{video_id}/transcode")
 async def transcode_endpoint(
     video_id: int,
@@ -37,7 +32,6 @@ async def transcode_endpoint(
 ):
     return await transcode_video(video_id, request, background_tasks, current_user)
 
-# Delete a video (admin only)
 @router.delete("/{video_id}")
 async def delete_video_route(
     video_id: int,
@@ -56,7 +50,6 @@ async def download_video(video_id: int, current_user: dict = Depends(get_current
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     
-    # Only allow owner or admin
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to download this video")
     
