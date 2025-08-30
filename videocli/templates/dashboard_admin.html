@@ -51,6 +51,12 @@
   {% for v in videos %}
   <div class="video-card">
     <h3>{{ v.filename }}</h3>
+    {% if v.get('title') %}
+      <p><strong>Title:</strong> {{ v.title }}</p>
+    {% endif %}
+    {% if v.get('description') %}
+      <p><strong>Description:</strong> {{ v.description }}</p>
+    {% endif %}
     <p>Status: <strong>{{ v.status }}</strong></p>
     <p>Owner: {{ v.owner }}</p>
 
