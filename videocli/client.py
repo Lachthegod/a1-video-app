@@ -57,13 +57,18 @@ async def dashboard(request: Request, session_id: str):
 
     headers = {"Authorization": f"Bearer {token}"}
     videos = []
+    tasks = []  # <-- define tasks here
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(f"{API_BASE}/", headers=headers)
             all_videos = resp.json()
 
             if role == "admin":
-                videos = all_videos  #admin gets access to every vid
+                videos = all_videos
+                # Fetch tasks for admin
+                resp_tasks = await client.get(f"{API_BASE}/tasks", headers=headers)
+                if resp_tasks.status_code == 200:
+                    tasks = resp_tasks.json()
             else:
                 videos = [v for v in all_videos if v["owner"] == username]
 
@@ -76,8 +81,10 @@ async def dashboard(request: Request, session_id: str):
         "videos": videos,
         "session_id": session_id,
         "username": username,
-        "role": role
+        "role": role,
+        "tasks": tasks  
     })
+
 
 
 @app.post("/upload/{session_id}")
