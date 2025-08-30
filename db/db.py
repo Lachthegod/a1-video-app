@@ -43,6 +43,7 @@ def init_db():
                 filename VARCHAR(255) NOT NULL,
                 filepath VARCHAR(500) NOT NULL,  
                 title VARCHAR(255),
+                description TEXT,
                 status VARCHAR(50) DEFAULT 'uploaded', 
                 format VARCHAR(20),
                 user_id INT, 
