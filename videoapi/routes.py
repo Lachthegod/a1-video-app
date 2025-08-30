@@ -87,7 +87,7 @@ async def delete_video_route(video_id: int,current_user: dict = Depends(get_curr
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins only can delete videos"
         )
-    return await delete_video(video_id)
+    return await delete_video(video_id, current_user)
 
 
 @router.get("/{video_id}/download")
