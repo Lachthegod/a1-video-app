@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, FileResponse
+from videoapi.task_logger import log_transcoding_task
 from videoapi.models import (
     create_video, get_video_by_id, list_videos, update_status, remove_video
 )
@@ -87,13 +88,20 @@ async def transcode_video(video_id: int, request: Request, background_tasks: Bac
     
     output_path = os.path.join("uploads", output_filename)
     update_status(video_id, status="transcoding")
-    background_tasks.add_task(transcode_and_update, video_id, input_path, output_path, output_format)
+    background_tasks.add_task(transcode_and_update, video_id, input_path, output_path, output_format, current_user["id"])
     return {"message": "Transcoding started", "video_id": video_id}
 
     
-def transcode_and_update(video_id, input_path, output_path, output_format):
-    success = transcode_video_file(input_path, output_path, output_format)
-    update_status(video_id, status="done" if success else "failed", format=output_format)
+def transcode_and_update(video_id, input_path, output_path, output_format, user_id=1):
+    try:
+        success = transcode_video_file(input_path, output_path, output_format)
+        status = "done" if success else "failed"
+        error_msg = None if success else "Transcoding failed"
+        update_status(video_id, status=status, format=output_format)
+        log_transcoding_task(video_id, user_id=user_id, format=output_format, status=status, error=error_msg)
+    except Exception as e:
+        update_status(video_id, status="failed")
+        log_transcoding_task(video_id, user_id=user_id, format=output_format, status="failed", error=str(e))
 
     
 async def delete_video(video_id: int, current_user: dict):
