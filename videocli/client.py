@@ -128,9 +128,10 @@ async def download(session_id: str, video_id: int):
         if resp.status_code != 200:
             return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
         
-        return StreamingResponse(io.BytesIO(resp.content), media_type="video/mp4", headers={
-            "Content-Disposition": f"attachment; filename=video_{video_id}.mp4"
-        })
+        media_type = resp.headers.get("content-type", "application/octet-stream")
+        return StreamingResponse(io.BytesIO(resp.content), media_type=media_type, headers={
+        "Content-Disposition": f"attachment; filename={resp.headers.get('content-disposition', f'video_{video_id}')}"
+    })
     
     
 @app.get("/tasks/{session_id}", response_class=HTMLResponse)
