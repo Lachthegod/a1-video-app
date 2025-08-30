@@ -92,7 +92,7 @@ async def transcode_video(video_id: int, request: Request, background_tasks: Bac
     return {"message": "Transcoding started", "video_id": video_id}
 
     
-def transcode_and_update(video_id, input_path, output_path, output_format, user_id=1):
+def transcode_and_update(video_id, input_path, output_path, output_format, user_id):
     try:
         success = transcode_video_file(input_path, output_path, output_format)
         status = "done" if success else "failed"

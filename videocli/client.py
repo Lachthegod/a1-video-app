@@ -135,12 +135,12 @@ async def tasks_dashboard(request: Request, session_id: str):
     if role != "admin":
         raise HTTPException(status_code=403, detail="Admins only")
 
-    import json
-    try:
-        with open("videoapi/transcode_tasks.json") as f:
-            tasks = json.load(f)
-    except FileNotFoundError:
-        tasks = []
+    headers = {"Authorization": f"Bearer {token}"}
+    tasks = []
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{API_BASE}/tasks", headers=headers)
+        if resp.status_code == 200:
+            tasks = resp.json()
 
     return templates.TemplateResponse("dashboard_tasks.html", {
         "request": request,
