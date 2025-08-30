@@ -1,22 +1,65 @@
-<h1>Admin Dashboard</h1>
-<h2>All Videos</h2>
-<ul>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .video-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+    }
+    .video-card h3 { margin: 0 0 10px 0; }
+    .video-actions form, .video-actions a { display: inline-block; margin-right: 8px; }
+    .upload-box {
+      margin-top: 20px;
+      padding: 15px;
+      border: 2px dashed #888;
+      border-radius: 8px;
+      background: #f1f1f1;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <h2>All Videos</h2>
+
   {% for v in videos %}
-    <li>{{ v.filename }} - {{ v.status }} (owner: {{ v.owner }})
+  <div class="video-card">
+    <h3>{{ v.filename }}</h3>
+    <p>Status: <strong>{{ v.status }}</strong></p>
+    <p>Owner: {{ v.owner }}</p>
+    <div class="video-actions">
       <form action="/transcode/{{ session_id }}/{{ v.id }}/mp4" method="post">
         <button type="submit">Transcode</button>
       </form>
       <form action="/delete/{{ session_id }}/{{ v.id }}" method="post">
-        <button>Delete</button>
+        <button type="submit" style="background:#dc3545">Delete</button>
       </form>
       <a href="/download/{{ session_id }}/{{ v.id }}">
-        <button type="button">Download</button>
+        <button type="button" style="background:#28a745">Download</button>
       </a>
-    </li>
+    </div>
+  </div>
   {% endfor %}
-</ul>
 
-<form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
-  <input type="file" name="file">
-  <button>Upload</button>
-</form>
+  <div class="upload-box">
+    <form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
+      <input type="file" name="file">
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+</body>
+</html>
