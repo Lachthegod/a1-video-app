@@ -17,7 +17,7 @@ def transcode_video_file(input_path, output_path, output_format="mov"):
         (
             ffmpeg
             .input(input_path)
-            .output(output_path, vcodec='libx264', acodec='aac', format=output_format)
+            .output(output_path, vcodec='libx264', acodec='aac', format="mov")
             .run(overwrite_output=True)
         )
         return True
