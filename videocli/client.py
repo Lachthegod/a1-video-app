@@ -155,3 +155,23 @@ async def tasks_dashboard(request: Request, session_id: str):
         "tasks": tasks,
         "session_id": session_id
     })
+
+@app.post("/update_metadata/{session_id}/{video_id}")
+async def update_metadata(session_id: str, video_id: int, title: str = Form(None), description: str = Form(None)):
+    token = SESSIONS.get(session_id)
+    if not token:
+        return RedirectResponse("/", status_code=303)
+
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {}
+    if title: payload["title"] = title
+    if description: payload["description"] = description
+
+    if not payload:
+        # Nothing to update
+        return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
+    async with httpx.AsyncClient() as client:
+        await client.put(f"{API_BASE}/{video_id}", json=payload, headers=headers)
+
+    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)

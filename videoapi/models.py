@@ -83,3 +83,26 @@ def remove_video(video_id):
     conn.close()
     return {"deleted": deleted}
 
+
+def update_video_metadata(video_id, metadata: dict):
+    allowed_fields = ["title", "description"]
+    updates = {k: v for k, v in metadata.items() if k in allowed_fields}
+
+    if not updates:
+        return None
+
+    set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
+    values = list(updates.values())
+    values.append(video_id)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"UPDATE videos SET {set_clause} WHERE id = ?", values)
+    conn.commit()
+    updated = cursor.rowcount > 0
+    cursor.execute("SELECT * FROM videos WHERE id = ?", (video_id,))
+    row = cursor.fetchone()
+    columns = [desc[0] for desc in cursor.description]
+    conn.close()
+
+    return dict(zip(columns, row)) if row else None

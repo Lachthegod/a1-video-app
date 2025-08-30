@@ -10,7 +10,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # Hard coded admin and user accounts, shows in web client too
 users = {
     "admin": {"id": 1, "password": "admin", "role": "admin"},
-    "user1": {"id": 2, "password": "password1", "role": "user"},
+    "user": {"id": 2, "password": "user", "role": "user"},
 }
 
 security = HTTPBearer()
