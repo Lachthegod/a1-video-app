@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, status, Body, Query
 from fastapi.responses import FileResponse
 from videoapi.auth import authenticate_user, generate_access_token, get_current_user
 from videoapi.models import get_video_by_id, update_video_metadata
@@ -42,13 +42,51 @@ async def get_transcoding_tasks(current_user: dict = Depends(get_current_user)):
 
 
 # Video endpoints,JWT protected
+# @router.get("/")
+# async def list_videos(current_user: dict = Depends(get_current_user)):
+#     """List videos with role-based filtering"""
+#     all_videos = get_all_videos()
+#     if current_user["role"] == "admin":
+#         return all_videos
+#     return [v for v in all_videos if v["owner"] == current_user["username"]]
+
 @router.get("/")
-async def list_videos(current_user: dict = Depends(get_current_user)):
-    """List videos with role-based filtering"""
-    all_videos = get_all_videos()
-    if current_user["role"] == "admin":
-        return all_videos
-    return [v for v in all_videos if v["owner"] == current_user["username"]]
+async def list_videos(
+    current_user: dict = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 10,
+    sort_by: str = "created_at",
+    order: str = "desc",
+    status: str | None = None,
+    owner: str | None = None,
+    search: str | None = None,
+):
+    videos = get_all_videos()  # <-- controller still fetches all from DB
+
+    # Role-based filtering
+    if current_user["role"] != "admin":
+        videos = [v for v in videos if v["owner"] == current_user["username"]]
+
+    # Optional filtering
+    if status:
+        videos = [v for v in videos if v["status"] == status]
+    if owner:
+        videos = [v for v in videos if v["owner"] == owner]
+    if search:
+        videos = [v for v in videos if search.lower() in v["filename"].lower()]
+
+    # Sorting
+    if videos and sort_by in videos[0]:
+        videos.sort(key=lambda v: v.get(sort_by), reverse=(order == "desc"))
+
+    # Pagination
+    return {
+        "total": len(videos),
+        "skip": skip,
+        "limit": limit,
+        "items": videos[skip : skip + limit],
+    }
+
 
 
 @router.get("/{video_id}")

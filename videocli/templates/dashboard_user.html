@@ -21,7 +21,7 @@
       border-radius: 8px;
       background: #f1f1f1;
     }
-    input[type="text"] {
+    input[type="text"], select {
       padding: 4px;
       margin: 2px 0;
       border-radius: 4px;
@@ -36,15 +36,34 @@
       cursor: pointer;
     }
     button:hover { background: #0056b3; }
+    .filters { margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <h1>User Dashboard</h1>
-    <form action="/logout/{{ session_id }}" method="get" style="margin-bottom:20px;">
-      <button type="submit" style="background:#6c757d">Sign Out</button>
-    </form>
-  <h2>Your Videos</h2>
+  <form action="/logout/{{ session_id }}" method="get" style="margin-bottom:20px;">
+    <button type="submit" style="background:#6c757d">Sign Out</button>
+  </form>
 
+  <!-- --------- ADDED: Filter/Search/Sort form --------- -->
+  <div class="filters">
+    <form method="get" action="/dashboard/{{ session_id }}">
+      <input type="text" name="search" placeholder="Search filename" value="{{ search or '' }}">
+      <select name="sort_by">
+        <option value="created_at" {% if sort_by=='created_at' %}selected{% endif %}>Created At</option>
+        <option value="filename" {% if sort_by=='filename' %}selected{% endif %}>Filename</option>
+        <option value="status" {% if sort_by=='status' %}selected{% endif %}>Status</option>
+      </select>
+      <select name="order">
+        <option value="asc" {% if order=='asc' %}selected{% endif %}>Ascending</option>
+        <option value="desc" {% if order=='desc' %}selected{% endif %}>Descending</option>
+      </select>
+      <button type="submit">Apply</button>
+    </form>
+  </div>
+  <!-- ---------------------------------------------------- -->
+
+  <h2>Your Videos</h2>
   {% for v in videos if v.owner == username %}
   <div class="video-card">
     <h3>{{ v.filename }}</h3>
@@ -56,7 +75,6 @@
     {% endif %}
     <p>Status: <strong>{{ v.status }}</strong></p>
 
-    
     <form action="/update_metadata/{{ session_id }}/{{ v.id }}" method="post">
       <input type="text" name="title" placeholder="Title" value="{{ v.get('title','') }}">
       <input type="text" name="description" placeholder="Description" value="{{ v.get('description','') }}">
@@ -76,6 +94,21 @@
     </div>
   </div>
   {% endfor %}
+
+  <!-- --------- ADDED: Pagination controls --------- -->
+  <div class="pagination" style="margin-top:20px;">
+    {% if skip > 0 %}
+      <a href="/dashboard/{{ session_id }}?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
+        <button type="button">&lt; Previous</button>
+      </a>
+    {% endif %}
+    {% if videos|length >= limit %}
+      <a href="/dashboard/{{ session_id }}?skip={{ skip+limit }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
+        <button type="button">Next &gt;</button>
+      </a>
+    {% endif %}
+  </div>
+  <!-- -------------------------------------------- -->
 
   <div class="upload-box">
     <form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
