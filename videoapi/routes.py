@@ -17,6 +17,31 @@ router.get("/", response_model=list)(get_all_videos)
 router.get("/{video_id}")(get_video)
 
 
+
+@router.post("/login")
+async def login(username: str = Body(...), password: str = Body(...)):
+    user = authenticate_user(username, password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = generate_access_token(username)
+    return {"authToken": token}
+
+@router.get("/tasks")
+async def get_transcoding_tasks(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+
+    LOG_FILE = "/usr/src/app/transcode_tasks.json"
+    try:
+        with open(LOG_FILE, "r") as f:
+            tasks = json.load(f)
+    except FileNotFoundError:
+        tasks = []
+
+    return tasks
+
+
+
 @router.post("/")
 async def upload_video_route(
     request: Request,
@@ -59,25 +84,3 @@ async def download_video(video_id: int, current_user: dict = Depends(get_current
     
     return FileResponse(path=video["filepath"], filename=os.path.basename(video["filepath"]), media_type="video/mp4")
 
-
-@router.post("/login")
-async def login(username: str = Body(...), password: str = Body(...)):
-    user = authenticate_user(username, password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = generate_access_token(username)
-    return {"authToken": token}
-
-@router.get("/tasks")
-async def get_transcoding_tasks(current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admins only")
-
-    LOG_FILE = "/usr/src/app/transcode_tasks.json"
-    try:
-        with open(LOG_FILE, "r") as f:
-            tasks = json.load(f)
-    except FileNotFoundError:
-        tasks = []
-
-    return tasks
