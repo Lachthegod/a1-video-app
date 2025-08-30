@@ -97,11 +97,32 @@ def transcode_and_update(video_id, input_path, output_path, output_format, user_
         success = transcode_video_file(input_path, output_path, output_format)
         status = "done" if success else "failed"
         error_msg = None if success else "Transcoding failed"
-        update_status(video_id, status=status, format=output_format)
-        log_transcoding_task(video_id, user_id=user_id, format=output_format, status=status, error=error_msg)
+
+        original_video = get_video_by_id(video_id)
+        owner = original_video["owner"]
+
+        if success:
+            create_video(
+                filename=os.path.basename(output_path),
+                filepath=output_path,
+                owner=owner,
+                user_id=user_id,
+                title=f"{original_video.get('title','')} (Transcoded)",
+                description=f"Transcoded from {original_video['filename']} to {output_format}"
+            )
+            update_status(video_id, status="done")
+        else:
+            update_status(video_id, status="failed")
+        log_transcoding_task(
+            video_id, user_id=user_id, format=output_format, status=status, error=error_msg
+        )
+
     except Exception as e:
         update_status(video_id, status="failed")
-        log_transcoding_task(video_id, user_id=user_id, format=output_format, status="failed", error=str(e))
+        log_transcoding_task(
+            video_id, user_id=user_id, format=output_format, status="failed", error=str(e)
+        )
+
 
     
 async def delete_video(video_id: int, current_user: dict):
