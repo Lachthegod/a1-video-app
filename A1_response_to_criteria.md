@@ -37,28 +37,34 @@ Core criteria
 
 ### REST API
 
-- **One line description:** 
-- **Video timestamp:**
+- **One line description:** REST API with endpoints (as nouns) and HTTP methods (GET, POST, PUT, DELETE), and appropriate status codes
+- **Video timestamp:** add
 - **Relevant files:**
-    - 
+    - /videoapi/routes.py
+    - /videoapi/controllers.py
+    - /videoapi/models.py
 
 ### Data types
 
-- **One line description:**
+#### First kind
+
+- **One line description:** Uploaded and transcoded video files stored locally.
+- **Type:** Unstructured
+- **Rationale:** These files are the primary user data, manipulated during upload, download, and transcoding. Stored as files because binary blobs in databases are inefficient for large media.
 - **Video timestamp:**
 - **Relevant files:**
     - 
 
-#### First kind
+#### Second kind
 
 - **One line description:**
 - **Type:**
 - **Rationale:**
 - **Video timestamp:**
 - **Relevant files:**
-    - 
+  - 
 
-#### Second kind
+#### Third kind
 
 - **One line description:**
 - **Type:**
