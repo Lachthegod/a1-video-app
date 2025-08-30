@@ -2,8 +2,9 @@ import json
 from datetime import datetime
 import os
 
-# File path for storing task logs
-LOG_FILE = os.environ.get("TASK_LOG_FILE", "transcode_tasks.json")
+
+LOG_FILE = os.environ.get("TASK_LOG_FILE", "/usr/src/app/transcode_tasks.json")
+
 
 # Ensure the file exists
 if not os.path.exists(LOG_FILE):
