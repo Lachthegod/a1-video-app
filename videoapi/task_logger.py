@@ -6,7 +6,6 @@ import os
 LOG_FILE = os.environ.get("TASK_LOG_FILE", "/usr/src/app/transcode_tasks.json")
 
 
-# Ensure the file exists
 if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, "w") as f:
         json.dump([], f)
@@ -26,14 +25,13 @@ def log_transcoding_task(video_id: int, user_id: int, format: str, status: str, 
     if error:
         item["error"] = error
 
-    # Read current logs
+
     with open(LOG_FILE, "r") as f:
         logs = json.load(f)
 
-    # Append new task
     logs.append(item)
 
-    # Save back
+
     with open(LOG_FILE, "w") as f:
         json.dump(logs, f, indent=2)
 

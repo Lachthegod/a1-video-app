@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, FileResponse
 from videoapi.task_logger import log_transcoding_task
+import mimetypes
 from videoapi.models import (
     create_video, get_video_by_id, list_videos, update_status, remove_video
 )
@@ -17,7 +18,7 @@ def transcode_video_file(input_path, output_path, output_format="mov"):
         (
             ffmpeg
             .input(input_path)
-            .output(output_path, vcodec='libx264', acodec='aac', format="mov")
+            .output(output_path, vcodec='libx264', acodec='aac', format=output_format)
             .run(overwrite_output=True)
         )
         return True
@@ -119,7 +120,8 @@ async def delete_video(video_id: int, current_user: dict):
     result = remove_video(video_id)
     return {"message": "Video deleted" if result["deleted"] else "Failed to delete video"}
 
-#Download files any
+
+
 def download_video(video_id: int, current_user: dict):
     video = get_video_by_id(video_id)
     if not video:
@@ -138,9 +140,13 @@ def download_video(video_id: int, current_user: dict):
     
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
+
+    media_type, _ = mimetypes.guess_type(file_path)
+    if not media_type:
+        media_type = "application/octet-stream"
     
     return FileResponse(
         path=file_path,
         filename=os.path.basename(file_path),
-        media_type="video/mp4"
+        media_type=media_type
     )
