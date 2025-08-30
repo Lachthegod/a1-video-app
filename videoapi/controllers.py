@@ -119,7 +119,7 @@ async def delete_video(video_id: int, current_user: dict):
     result = remove_video(video_id)
     return {"message": "Video deleted" if result["deleted"] else "Failed to delete video"}
 
-#Download, need to fix for .mov
+#Download files any
 def download_video(video_id: int, current_user: dict):
     video = get_video_by_id(video_id)
     if not video:
