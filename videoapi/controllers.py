@@ -29,7 +29,7 @@ def transcode_video_file(input_path, output_path, output_format):
 def get_all_videos():
     try:
         videos = list_videos()
-        return JSONResponse(content=jsonable_encoder(videos))
+        return jsonable_encoder(videos) 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
