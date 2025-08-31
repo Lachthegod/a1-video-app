@@ -45,7 +45,7 @@
     <button type="submit" style="background:#6c757d">Sign Out</button>
   </form>
 
-  <!-- --------- ADDED: Filter/Search/Sort form --------- -->
+  
   <div class="filters">
     <form method="get" action="/dashboard/{{ session_id }}">
       <input type="text" name="search" placeholder="Search filename" value="{{ search or '' }}">
@@ -61,7 +61,7 @@
       <button type="submit">Apply</button>
     </form>
   </div>
-  <!-- ---------------------------------------------------- -->
+
 
   <h2>Your Videos</h2>
   {% for v in videos if v.owner == username %}
@@ -95,7 +95,7 @@
   </div>
   {% endfor %}
 
-  <!-- --------- ADDED: Pagination controls --------- -->
+
   <div class="pagination" style="margin-top:20px;">
     {% if skip > 0 %}
       <a href="/dashboard/{{ session_id }}?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
@@ -108,7 +108,6 @@
       </a>
     {% endif %}
   </div>
-  <!-- -------------------------------------------- -->
 
   <div class="upload-box">
     <form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">

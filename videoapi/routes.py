@@ -40,7 +40,7 @@ async def get_transcoding_tasks(current_user: dict = Depends(get_current_user)):
 
     return tasks
 
-
+#basic test point for extended 
 # Video endpoints,JWT protected
 # @router.get("/")
 # async def list_videos(current_user: dict = Depends(get_current_user)):
@@ -61,13 +61,11 @@ async def list_videos(
     owner: str | None = None,
     search: str | None = None,
 ):
-    videos = get_all_videos()  # <-- controller still fetches all from DB
+    videos = get_all_videos() 
 
-    # Role-based filtering
     if current_user["role"] != "admin":
         videos = [v for v in videos if v["owner"] == current_user["username"]]
 
-    # Optional filtering
     if status:
         videos = [v for v in videos if v["status"] == status]
     if owner:
@@ -75,11 +73,9 @@ async def list_videos(
     if search:
         videos = [v for v in videos if search.lower() in v["filename"].lower()]
 
-    # Sorting
     if videos and sort_by in videos[0]:
         videos.sort(key=lambda v: v.get(sort_by), reverse=(order == "desc"))
 
-    # Pagination
     return {
         "total": len(videos),
         "skip": skip,

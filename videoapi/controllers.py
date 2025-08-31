@@ -64,8 +64,6 @@ async def upload_video(request: Request, current_user: dict):
 
 
 
-
-# Start transcoding a video 
 async def transcode_video(video_id: int, request: Request, background_tasks: BackgroundTasks, current_user: dict):
     data = await request.json()
     output_format = data.get("format")

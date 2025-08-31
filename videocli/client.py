@@ -45,45 +45,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
 
-# @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
-# async def dashboard(request: Request, session_id: str):
-#     token = SESSIONS.get(session_id)
-#     if not token:
-#         return RedirectResponse("/", status_code=303)
-
-#     username, role = decode_jwt(token)
-#     if not username:
-#         return RedirectResponse("/", status_code=303)
-
-#     headers = {"Authorization": f"Bearer {token}"}
-#     videos = []
-#     tasks = [] 
-#     try:
-#         async with httpx.AsyncClient() as client:
-#             resp = await client.get(f"{API_BASE}/", headers=headers)
-#             all_videos = resp.json()
-
-#             if role == "admin":
-#                 videos = all_videos
-               
-#                 resp_tasks = await client.get(f"{API_BASE}/tasks", headers=headers)
-#                 if resp_tasks.status_code == 200:
-#                     tasks = resp_tasks.json()
-#             else:
-#                 videos = [v for v in all_videos if v["owner"] == username]
-
-#     except Exception as e:
-#         print("Error fetching videos:", e)
-
-#     template_name = "dashboard_admin.html" if role == "admin" else "dashboard_user.html"
-#     return templates.TemplateResponse(template_name, {
-#         "request": request,
-#         "videos": videos,
-#         "session_id": session_id,
-#         "username": username,
-#         "role": role,
-#         "tasks": tasks  
-#     })
 
 @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
 async def dashboard(request: Request, session_id: str):
@@ -99,7 +60,7 @@ async def dashboard(request: Request, session_id: str):
     videos = []
     tasks = []
 
-    # ----------------- CHANGED / ADDED: handle query parameters -----------------
+
     skip = int(request.query_params.get("skip", 0))
     limit = int(request.query_params.get("limit", 10))
     sort_by = request.query_params.get("sort_by", "created_at")
@@ -107,11 +68,10 @@ async def dashboard(request: Request, session_id: str):
     status = request.query_params.get("status")
     owner_filter = request.query_params.get("owner")
     search = request.query_params.get("search")
-    # ---------------------------------------------------------------------------
+
 
     try:
         async with httpx.AsyncClient() as client:
-            # ----------------- CHANGED: pass query parameters to API -----------------
             params = {
                 "skip": skip,
                 "limit": limit,
@@ -125,19 +85,15 @@ async def dashboard(request: Request, session_id: str):
             resp = await client.get(f"{API_BASE}/", headers=headers, params=params)
             resp_json = resp.json()
 
-            # API returns {"total":..., "skip":..., "limit":..., "items":[...]}
             all_videos = resp_json.get("items", [])
-            # -----------------------------------------------------------------------
 
             if role == "admin":
                 videos = all_videos
 
-                # Fetch tasks only for admin
                 resp_tasks = await client.get(f"{API_BASE}/tasks", headers=headers)
                 if resp_tasks.status_code == 200:
                     tasks = resp_tasks.json()
             else:
-                # For non-admins, filter by username (API should also filter but double-check)
                 videos = [v for v in all_videos if v["owner"] == username]
 
     except Exception as e:
@@ -151,7 +107,6 @@ async def dashboard(request: Request, session_id: str):
         "username": username,
         "role": role,
         "tasks": tasks,
-        # ----------------- CHANGED: pass current query params to template -----------------
         "skip": skip,
         "limit": limit,
         "sort_by": sort_by,
@@ -159,7 +114,6 @@ async def dashboard(request: Request, session_id: str):
         "status": status,
         "owner_filter": owner_filter,
         "search": search
-        # -------------------------------------------------------------------------------
     })
 
 

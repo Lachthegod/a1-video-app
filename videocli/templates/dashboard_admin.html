@@ -41,7 +41,6 @@
     <button type="submit" style="background:#6c757d">Sign Out</button>
   </form>
 
-  <!-- Filter/Search/Sort Videos -->
   <div class="filters">
     <form method="get" action="/dashboard/{{ session_id }}">
       <input type="text" name="search" placeholder="Search filename" value="{{ search or '' }}">
@@ -82,7 +81,6 @@
   </div>
   {% endfor %}
 
-  <!-- Pagination -->
   <div class="pagination">
     {% if skip > 0 %}
       <a href="/dashboard/{{ session_id }}?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}"><button type="button">&lt; Previous</button></a>
@@ -92,7 +90,6 @@
     {% endif %}
   </div>
 
-  <!-- Upload Box -->
   <div class="upload-box">
     <form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
       <input type="file" name="file">
