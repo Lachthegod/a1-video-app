@@ -5,7 +5,7 @@ import io
 import httpx
 import uuid
 import requests
-from jose import jwt, JWTError
+from jose import jwt, jwk, JWTError
 
 # -----------------------------
 # Cognito Config
@@ -32,19 +32,17 @@ SESSIONS = {}  # simple in-memory session store
 # -----------------------------
 def decode_jwt(token: str):
     try:
-        # Extract signing key from token header
         unverified_headers = jwt.get_unverified_header(token)
         kid = unverified_headers["kid"]
         key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
         if not key:
             return None, None
 
-        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
+        public_key = jwk.construct(key)
 
-        # Verify and decode token
         payload = jwt.decode(
             token,
-            public_key,
+            public_key.to_pem().decode(),
             algorithms=["RS256"],
             audience=COGNITO_CLIENT_ID,
         )
