@@ -46,7 +46,7 @@ def init_db():
                 description TEXT,
                 status VARCHAR(50) DEFAULT 'uploaded', 
                 format VARCHAR(20),
-                user_id INT, 
+                user_id VARCHAR(36), 
                 owner VARCHAR(50), 
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
