@@ -264,3 +264,38 @@ async def update_metadata(
 async def logout(session_id: str):
     SESSIONS.pop(session_id, None)
     return RedirectResponse("/", status_code=303)
+
+
+# Signup page
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request):
+    return templates.TemplateResponse("signup.html", {"request": request})
+
+# Handle signup form
+@app.post("/signup")
+async def signup(request: Request, username: str = Form(...), password: str = Form(...), email: str = Form(...)):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{API_BASE}/auth/signup",
+            json={"username": username, "password": password, "email": email}
+        )
+    if resp.status_code != 200:
+        return templates.TemplateResponse("signup.html", {"request": request, "error": resp.text})
+    return RedirectResponse("/confirm", status_code=303)
+
+# Confirm page
+@app.get("/confirm", response_class=HTMLResponse)
+async def confirm_page(request: Request):
+    return templates.TemplateResponse("confirm.html", {"request": request})
+
+# Handle confirmation form
+@app.post("/confirm")
+async def confirm(request: Request, username: str = Form(...), code: str = Form(...)):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{API_BASE}/auth/confirm",
+            json={"username": username, "code": code}
+        )
+    if resp.status_code != 200:
+        return templates.TemplateResponse("confirm.html", {"request": request, "error": resp.text})
+    return RedirectResponse("/", status_code=303)
