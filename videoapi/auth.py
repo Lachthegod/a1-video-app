@@ -56,7 +56,8 @@
 
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from jose import jwt, jwk, JWTError
+from jose.utils import base64url_decode
 import requests
 import os
 
@@ -75,22 +76,24 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
     token = credentials.credentials
     try:
-        # Extract signing key
+        # Get the key
         unverified_headers = jwt.get_unverified_header(token)
         kid = unverified_headers["kid"]
-        key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
-        if not key:
+        key_data = next((k for k in jwks["keys"] if k["kid"] == kid), None)
+        if not key_data:
             raise HTTPException(status_code=401, detail="Invalid token key")
 
-        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
+        # Construct the public key
+        public_key = jwk.construct(key_data)
 
-        # Verify token
-        payload = jwt.decode(
-            token,
-            public_key,
-            algorithms=["RS256"],
-            audience=COGNITO_CLIENT_ID
-        )
+        # Verify signature manually
+        message, encoded_sig = token.rsplit('.', 1)
+        decoded_sig = base64url_decode(encoded_sig.encode())
+        if not public_key.verify(message.encode(), decoded_sig):
+            raise HTTPException(status_code=401, detail="Invalid token signature")
+
+        # Decode claims
+        payload = jwt.get_unverified_claims(token)
 
         username = payload.get("cognito:username") or payload.get("username")
         groups = payload.get("cognito:groups", [])
@@ -109,5 +112,3 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="Token expired")
     except JWTError as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
-
-    
