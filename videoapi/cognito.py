@@ -99,7 +99,7 @@ def authenticate_user(username: str, password: str) -> dict:
 def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: str) -> dict:
     params = {
         "ClientId": COGNITO_CLIENT_ID,
-        "ChallengeName": challenge,  # "CUSTOM_CHALLENGE" for email MFA
+        "ChallengeName": challenge,
         "Session": session,
         "ChallengeResponses": {
             "USERNAME": username,

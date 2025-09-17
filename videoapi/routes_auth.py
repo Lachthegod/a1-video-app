@@ -32,7 +32,7 @@ async def login(username: str = Body(...), password: str = Body(...)):
 @router.post("/mfa")
 async def mfa(username: str = Body(...), session: str = Body(...), code: str = Body(...)):
     try:
-        tokens = respond_to_mfa_challenge(username, session, code)
+        tokens = respond_to_mfa_challenge(username, session, code, "CUSTOM_CHALLENGE")
         return tokens
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
