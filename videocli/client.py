@@ -80,8 +80,13 @@ async def login(request: Request, username: str = Form(...), password: str = For
         if "challenge" in data:
             # Store temporary session for MFA
             session_id = str(uuid.uuid4())
-            SESSIONS[session_id] = {"username": username, "session": data["session"]}
+            SESSIONS[session_id] = {
+                "username": username,
+                "session": data["session"],
+                "challenge": data["challenge"],   # <--- add this
+            }
             return RedirectResponse(f"/mfa/{session_id}", status_code=303)
+
 
         # Normal login flow
         token = data["IdToken"]
@@ -283,6 +288,7 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
             f"{API_BASE}/auth/signup",
             json={"username": username, "password": password, "email": email}
         )
+    print("Login response JSON:", resp.json())
     if resp.status_code != 200:
         return templates.TemplateResponse("signup.html", {"request": request, "error": resp.text})
     return RedirectResponse("/confirm", status_code=303)
@@ -317,15 +323,24 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
 
     username = session_data["username"]
     session_token = session_data["session"]
+    challenge = session_data["challenge"]   # <- pull it back here
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{API_BASE}/auth/mfa",
-            json={"username": username, "session": session_token, "code": code},
+            json={
+                "username": username,
+                "session": session_token,
+                "code": code,
+                "challenge": challenge,   # <- send it to backend
+            },
         )
 
     if resp.status_code != 200:
-        return templates.TemplateResponse("mfa.html", {"request": request, "session_id": session_id, "error": "Invalid code"})
+        return templates.TemplateResponse(
+            "mfa.html",
+            {"request": request, "session_id": session_id, "error": "Invalid code"},
+        )
 
     tokens = resp.json()
     token = tokens["IdToken"]
@@ -333,3 +348,4 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
     # Replace MFA session with real JWT
     SESSIONS[session_id] = token
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
