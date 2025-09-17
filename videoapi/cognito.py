@@ -97,29 +97,24 @@ def authenticate_user(username: str, password: str) -> dict:
 
     
 
-def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: str) -> dict:
+def respond_to_mfa_challenge(username: str, session: str, code: str) -> dict:
     params = {
         "ClientId": COGNITO_CLIENT_ID,
-        "ChallengeName": challenge,  # "CUSTOM_CHALLENGE" for email MFA
+        "ChallengeName": "SOFTWARE_TOKEN_MFA",  # or SMS_MFA if using SMS
         "Session": session,
         "ChallengeResponses": {
             "USERNAME": username,
+            "SOFTWARE_TOKEN_MFA_CODE": code
         },
     }
-
-    if challenge == "CUSTOM_CHALLENGE":
-        params["ChallengeResponses"]["ANSWER"] = code
-    elif challenge == "SMS_MFA":
-        params["ChallengeResponses"]["SMS_MFA_CODE"] = code
-    elif challenge == "SOFTWARE_TOKEN_MFA":
-        params["ChallengeResponses"]["SOFTWARE_TOKEN_MFA_CODE"] = code
-
     secret_hash = get_secret_hash(username)
     if secret_hash:
         params["ChallengeResponses"]["SECRET_HASH"] = secret_hash
 
-    response = client.respond_to_auth_challenge(**params)
-    return response["AuthenticationResult"]
-
+    try:
+        response = client.respond_to_auth_challenge(**params)
+        return response["AuthenticationResult"]
+    except ClientError as e:
+        raise Exception(e.response["Error"]["Message"])
 
 
