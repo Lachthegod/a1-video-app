@@ -1,6 +1,6 @@
 # videoapi/routes_auth.py
 from fastapi import APIRouter, Body, HTTPException
-from videoapi.cognito import sign_up_user, confirm_user, authenticate_user  # functions to call Cognito APIs
+from videoapi.cognito import sign_up_user, confirm_user, authenticate_user, respond_to_mfa_challenge # functions to call Cognito APIs
 
 router = APIRouter()
 
@@ -24,6 +24,15 @@ async def confirm(username: str = Body(...), code: str = Body(...)):
 async def login(username: str = Body(...), password: str = Body(...)):
     try:
         tokens = authenticate_user(username, password)
+        return tokens
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+@router.post("/mfa")
+async def mfa(username: str = Body(...), session: str = Body(...), code: str = Body(...)):
+    try:
+        tokens = respond_to_mfa_challenge(username, session, code)
         return tokens
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))

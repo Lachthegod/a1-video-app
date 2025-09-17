@@ -65,7 +65,6 @@ def confirm_user(username: str, code: str) -> dict:
 
 
 def authenticate_user(username: str, password: str) -> dict:
-    """Authenticate a user and return Cognito tokens"""
     params = {
         "AuthFlow": "USER_PASSWORD_AUTH",
         "AuthParameters": {
@@ -80,6 +79,37 @@ def authenticate_user(username: str, password: str) -> dict:
 
     try:
         response = client.initiate_auth(**params)
+
+        if "ChallengeName" in response:
+            return {
+                "challenge": response["ChallengeName"],
+                "session": response["Session"]
+            }
+
+        return response["AuthenticationResult"]
+
+    except ClientError as e:
+        raise Exception(e.response["Error"]["Message"])
+    
+
+def respond_to_mfa_challenge(username: str, session: str, code: str) -> dict:
+    params = {
+        "ClientId": COGNITO_CLIENT_ID,
+        "ChallengeName": "SOFTWARE_TOKEN_MFA",  # or SMS_MFA if using SMS
+        "Session": session,
+        "ChallengeResponses": {
+            "USERNAME": username,
+            "SOFTWARE_TOKEN_MFA_CODE": code
+        },
+    }
+    secret_hash = get_secret_hash(username)
+    if secret_hash:
+        params["ChallengeResponses"]["SECRET_HASH"] = secret_hash
+
+    try:
+        response = client.respond_to_auth_challenge(**params)
         return response["AuthenticationResult"]
     except ClientError as e:
         raise Exception(e.response["Error"]["Message"])
+
+

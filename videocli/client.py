@@ -69,20 +69,26 @@ async def login(request: Request, username: str = Form(...), password: str = For
             f"{API_BASE}/auth/login",
             json={"username": username, "password": password},
         )
+
         if resp.status_code != 200:
             return templates.TemplateResponse(
-                "login.html",
-                {"request": request, "error": "Invalid credentials"},
+                "login.html", {"request": request, "error": "Invalid credentials"}
             )
 
-        tokens = resp.json()
-        token = tokens["IdToken"]  # Use IdToken for user identity
+        data = resp.json()
 
-    # Create session
-    session_id = str(uuid.uuid4())
-    SESSIONS[session_id] = token
+        if "challenge" in data:
+            # Store temporary session for MFA
+            session_id = str(uuid.uuid4())
+            SESSIONS[session_id] = {"username": username, "session": data["session"]}
+            return RedirectResponse(f"/mfa/{session_id}", status_code=303)
 
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+        # Normal login flow
+        token = data["IdToken"]
+        session_id = str(uuid.uuid4())
+        SESSIONS[session_id] = token
+        return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
 
 
 @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
@@ -297,3 +303,33 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
     if resp.status_code != 200:
         return templates.TemplateResponse("confirm.html", {"request": request, "error": resp.text})
     return RedirectResponse("/", status_code=303)
+
+
+@app.get("/mfa/{session_id}", response_class=HTMLResponse)
+async def mfa_page(request: Request, session_id: str):
+    return templates.TemplateResponse("mfa.html", {"request": request, "session_id": session_id})
+
+@app.post("/mfa/{session_id}")
+async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
+    session_data = SESSIONS.get(session_id)
+    if not session_data:
+        return RedirectResponse("/", status_code=303)
+
+    username = session_data["username"]
+    session_token = session_data["session"]
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{API_BASE}/auth/mfa",
+            json={"username": username, "session": session_token, "code": code},
+        )
+
+    if resp.status_code != 200:
+        return templates.TemplateResponse("mfa.html", {"request": request, "session_id": session_id, "error": "Invalid code"})
+
+    tokens = resp.json()
+    token = tokens["IdToken"]
+
+    # Replace MFA session with real JWT
+    SESSIONS[session_id] = token
+    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
