@@ -110,8 +110,9 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
         params["ChallengeResponses"]["SMS_MFA_CODE"] = code
     elif challenge == "SOFTWARE_TOKEN_MFA":
         params["ChallengeResponses"]["SOFTWARE_TOKEN_MFA_CODE"] = code
-    elif challenge == "EMAIL_OTP":  # <-- add this branch
-        params["ChallengeResponses"]["ANSWER"] = code
+    elif challenge == "EMAIL_OTP":
+        params["ChallengeResponses"]["EMAIL_OTP_CODE"] = code
+
 
     secret_hash = get_secret_hash(username)
     if secret_hash:
