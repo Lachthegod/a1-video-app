@@ -288,7 +288,7 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
             f"{API_BASE}/auth/signup",
             json={"username": username, "password": password, "email": email}
         )
-    print("Login response JSON:", resp.json())
+        
     if resp.status_code != 200:
         return templates.TemplateResponse("signup.html", {"request": request, "error": resp.text})
     return RedirectResponse("/confirm", status_code=303)

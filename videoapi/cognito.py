@@ -101,9 +101,7 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
         "ClientId": COGNITO_CLIENT_ID,
         "ChallengeName": challenge,
         "Session": session,
-        "ChallengeResponses": {
-            "USERNAME": username,
-        },
+        "ChallengeResponses": {"USERNAME": username},
     }
 
     if challenge == "CUSTOM_CHALLENGE":
@@ -112,6 +110,8 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
         params["ChallengeResponses"]["SMS_MFA_CODE"] = code
     elif challenge == "SOFTWARE_TOKEN_MFA":
         params["ChallengeResponses"]["SOFTWARE_TOKEN_MFA_CODE"] = code
+    elif challenge == "EMAIL_OTP":  # <-- add this branch
+        params["ChallengeResponses"]["ANSWER"] = code
 
     secret_hash = get_secret_hash(username)
     if secret_hash:
