@@ -214,8 +214,9 @@ async def download(session_id: str, video_id: int):
         if not download_url:
             return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
-        # Redirect the browser to the pre-signed URL
+        # Redirect user to S3 presigned URL
         return RedirectResponse(download_url)
+
 
 
 

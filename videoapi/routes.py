@@ -169,7 +169,9 @@ from videoapi.controllers import (
 
 router = APIRouter()
 
-
+AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
+S3_BUCKET = os.getenv("S3_BUCKET", "n11715910-a2")
+s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 # Admin endpoint
 @router.get("/tasks")
@@ -265,14 +267,17 @@ async def download_video(video_id: int, current_user: dict = Depends(get_current
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to download this video")
     
-    if not os.path.exists(video["filepath"]):
-        raise HTTPException(status_code=404, detail="File not found on server")
-    
-    return FileResponse(
-        path=video["filepath"], 
-        filename=os.path.basename(video["filepath"]), 
-        media_type="video/mp4"
-    )
+    # Generate S3 presigned URL
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": S3_BUCKET, "Key": video["filepath"]},  # ✅ must be the actual S3 key
+            ExpiresIn=3600
+        )
+        return {"download_url": presigned_url}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not generate download link")
+
 
 
 @router.put("/{video_id}")
