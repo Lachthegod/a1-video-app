@@ -6,7 +6,6 @@ ffmpeg-python
 pydantic          
 requests          
 PyJWT
-os
 boto3
 
 
