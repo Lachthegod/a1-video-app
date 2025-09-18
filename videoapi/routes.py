@@ -159,6 +159,7 @@ from videoapi.auth import get_current_user
 from videoapi.models import get_video_by_id, update_video_metadata
 import os
 import json
+import boto3
 from videoapi.controllers import (
     get_all_videos,
     get_video,
