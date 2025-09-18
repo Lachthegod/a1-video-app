@@ -209,14 +209,14 @@ async def download(session_id: str, video_id: int):
         if resp.status_code != 200:
             return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
-        media_type = resp.headers.get("content-type", "application/octet-stream")
-        return StreamingResponse(
-            io.BytesIO(resp.content),
-            media_type=media_type,
-            headers={
-                "Content-Disposition": f"attachment; filename={resp.headers.get('content-disposition', f'video_{video_id}')}"
-            },
-        )
+        data = resp.json()
+        download_url = data.get("download_url")
+        if not download_url:
+            return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
+        # Redirect the browser to the pre-signed URL
+        return RedirectResponse(download_url)
+
 
 
 @app.get("/tasks/{session_id}", response_class=HTMLResponse)
@@ -288,7 +288,7 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
             f"{API_BASE}/auth/signup",
             json={"username": username, "password": password, "email": email}
         )
-        
+
     if resp.status_code != 200:
         return templates.TemplateResponse("signup.html", {"request": request, "error": resp.text})
     return RedirectResponse("/confirm", status_code=303)
