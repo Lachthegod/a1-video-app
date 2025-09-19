@@ -526,23 +526,11 @@ async def upload(session_id: str, file: UploadFile = File(...)):
     timeout = httpx.Timeout(300.0, connect=60.0)
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        # Use a generator to stream file chunks
-        async def file_generator():
-            while True:
-                chunk = await file.read(1024 * 1024)  # 1 MB chunks
-                if not chunk:
-                    break
-                yield chunk
+        files = {"file": (file.filename, await file.read(), file.content_type)}
+        resp = await client.post(f"{API_BASE}/videos/", headers=headers, files=files)
 
-        # Stream directly to your API
-        async with client.stream(
-            "POST",
-            f"{API_BASE}/videos/",
-            headers=headers,
-            data=file_generator(),
-        ) as resp:
-            if resp.status_code != 200:
-                raise HTTPException(status_code=resp.status_code, detail="Upload failed")
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Upload failed")
 
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
