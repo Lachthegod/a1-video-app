@@ -432,7 +432,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
         resp = await client.post(f"{API_BASE}/auth/login", json={"username": username, "password": password})
         if resp.status_code != 200:
             return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
-        data = await resp.json()
+        data = resp.json()
 
         if "challenge" in data:
             session_id = str(uuid.uuid4())
@@ -481,14 +481,14 @@ async def dashboard(request: Request, session_id: str):
                 "search": search,
             }
             resp = await client.get(f"{API_BASE}/videos/", headers=headers, params=params)
-            resp_json = await resp.json()
+            resp_json = resp.json()
             all_videos = resp_json.get("items", [])
 
             if role == "admin":
                 videos = all_videos
                 resp_tasks = await client.get(f"{API_BASE}/videos/tasks", headers=headers)
                 if resp_tasks.status_code == 200:
-                    tasks = await resp_tasks.json()
+                    tasks = resp_tasks.json()
             else:
                 videos = [v for v in all_videos if v["owner"] == username]
 
@@ -661,7 +661,7 @@ async def download(session_id: str, video_id: int):
         resp = await client.get(f"{API_BASE}/videos/{video_id}/download", headers=headers)
         if resp.status_code != 200:
             return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
-        data = await resp.json()
+        data = resp.json()
         download_url = data.get("download_url")
         if not download_url:
             return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
@@ -695,7 +695,7 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
             {"request": request, "session_id": session_id, "error": "Invalid code"},
         )
 
-    tokens = await resp.json()
+    tokens = resp.json()
     token = tokens["IdToken"]
     SESSIONS[session_id] = token
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
