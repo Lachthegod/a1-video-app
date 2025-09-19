@@ -59,9 +59,12 @@ async def upload_video(request: Request, current_user: dict):
         raise HTTPException(status_code=400, detail="No file uploaded")
 
     # Unique key for S3
-    object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
+    #object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
+    object_key = f"uploads/{current_user['id']}/{file.filename}"
+
 
     try:
+        file.file.seek(0)
         s3_client.upload_fileobj(file.file, S3_BUCKET, object_key)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
