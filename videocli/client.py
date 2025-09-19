@@ -655,7 +655,7 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
         )
 
     if resp.status_code != 200:
-        return templates.TemplateResponse("signup.html", {"request": request, "error": await resp.text()})
+        return templates.TemplateResponse("signup.html", {"request": request, "error": resp.text})
     return RedirectResponse("/confirm", status_code=303)
 
 
