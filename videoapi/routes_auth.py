@@ -1,6 +1,9 @@
 # videoapi/routes_auth.py
 from fastapi import APIRouter, Request, HTTPException, Body
 from fastapi.responses import RedirectResponse
+from videoapi.cognito import (
+    sign_up_user, confirm_user, authenticate_user, respond_to_mfa_challenge
+)
 import requests
 import os
 import jwt
