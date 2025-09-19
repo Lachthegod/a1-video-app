@@ -79,38 +79,30 @@ def get_video(video_id: int):
 
 # ---------- Upload (Presigned) ----------
 async def upload_video(request: Request, current_user: dict):
-    form = await request.form()
-    file = form.get("file")
-    if not file:
-        raise HTTPException(status_code=400, detail="No file uploaded")
+    data = await request.json()
+    filename = data.get("filename")
+    content_type = data.get("content_type")
+    if not filename or not content_type:
+        raise HTTPException(status_code=400, detail="Missing filename or content_type")
 
-    # Unique S3 key
-    object_key = f"uploads/{current_user['id']}/{file.filename}"
+    object_key = f"uploads/{current_user['id']}/{filename}"
 
-    try:
-        # Generate presigned PUT URL (valid for 1 hour)
-        presigned_url = s3_client.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": S3_BUCKET, "Key": object_key, "ContentType": file.content_type},
-            ExpiresIn=3600
-        )
+    presigned_url = s3_client.generate_presigned_url(
+        "put_object",
+        Params={"Bucket": S3_BUCKET, "Key": object_key, "ContentType": content_type},
+        ExpiresIn=3600
+    )
 
-        # Save metadata in DB (status = "pending upload")
-        video_record = create_video(
-            filename=file.filename,
-            filepath=object_key,
-            owner=current_user["username"],
-            user_id=current_user["id"],
-            status="pending_upload"
-        )
+    video_record = create_video(
+        filename=filename,
+        filepath=object_key,
+        owner=current_user["username"],
+        user_id=current_user["id"],
+        status="pending_upload"
+    )
 
-        return {
-            "upload_url": presigned_url,
-            "object_key": object_key,
-            "video_record": video_record
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not generate upload URL: {str(e)}")
+    return {"upload_url": presigned_url, "object_key": object_key, "video_record": video_record}
+
 
 
 

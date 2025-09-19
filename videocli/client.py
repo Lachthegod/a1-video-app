@@ -529,11 +529,8 @@ async def upload(session_id: str, file: UploadFile = File(...)):
         # --- Step 1: Request a presigned URL from API ---
         presign_resp = await client.post(
             f"{API_BASE}/videos/",
-            headers=headers,
-            data={
-                "filename": file.filename,
-                "content_type": file.content_type,
-            },
+            headers={**headers, "Content-Type": "application/json"},
+            json={"filename": file.filename, "content_type": file.content_type},
         )
 
         if presign_resp.status_code != 200:
