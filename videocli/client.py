@@ -526,13 +526,41 @@ async def upload(session_id: str, file: UploadFile = File(...)):
     timeout = httpx.Timeout(300.0, connect=60.0)
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        files = {"file": (file.filename, await file.read(), file.content_type)}
-        resp = await client.post(f"{API_BASE}/videos/", headers=headers, files=files)
+        # --- Step 1: Request a presigned URL from API ---
+        presign_resp = await client.post(
+            f"{API_BASE}/videos/",
+            headers=headers,
+            data={
+                "filename": file.filename,
+                "content_type": file.content_type,
+            },
+        )
 
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="Upload failed")
+        if presign_resp.status_code != 200:
+            raise HTTPException(
+                status_code=presign_resp.status_code,
+                detail="Failed to get presigned upload URL",
+            )
 
+        presign_data = presign_resp.json()
+        upload_url = presign_data["upload_url"]
+        object_key = presign_data["object_key"]
+
+        # --- Step 2: Upload the file directly to S3 using the presigned URL ---
+        file.file.seek(0)  # reset file pointer
+        s3_resp = await client.put(
+            upload_url,
+            content=await file.read(),
+            headers={"Content-Type": file.content_type},
+        )
+
+        if s3_resp.status_code not in (200, 201):
+            raise HTTPException(
+                status_code=s3_resp.status_code,
+                detail="Upload to S3 failed",
+            )
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
 
 
 # -----------------------------

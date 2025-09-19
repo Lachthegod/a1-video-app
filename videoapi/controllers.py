@@ -51,31 +51,67 @@ def get_video(video_id: int):
     return JSONResponse(content=jsonable_encoder(video))
 
 
-# ---------- Upload ----------
+# # ---------- Upload ----------
+# async def upload_video(request: Request, current_user: dict):
+#     form = await request.form()
+#     file = form.get("file")
+#     if not file:
+#         raise HTTPException(status_code=400, detail="No file uploaded")
+
+#     # Unique key for S3
+#     #object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
+#     object_key = f"uploads/{current_user['id']}/{file.filename}"
+
+
+#     try:
+#         file.file.seek(0)
+#         s3_client.upload_fileobj(file.file, S3_BUCKET, object_key)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+#     video_record = create_video(
+#         filename=file.filename,
+#         filepath=object_key,  # now stores S3 key
+#         owner=current_user["username"],
+#         user_id=current_user["id"]
+#     )
+#     return JSONResponse(content=video_record)
+
+# ---------- Upload (Presigned) ----------
 async def upload_video(request: Request, current_user: dict):
     form = await request.form()
     file = form.get("file")
     if not file:
         raise HTTPException(status_code=400, detail="No file uploaded")
 
-    # Unique key for S3
-    #object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
+    # Unique S3 key
     object_key = f"uploads/{current_user['id']}/{file.filename}"
 
-
     try:
-        file.file.seek(0)
-        s3_client.upload_fileobj(file.file, S3_BUCKET, object_key)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        # Generate presigned PUT URL (valid for 1 hour)
+        presigned_url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": S3_BUCKET, "Key": object_key, "ContentType": file.content_type},
+            ExpiresIn=3600
+        )
 
-    video_record = create_video(
-        filename=file.filename,
-        filepath=object_key,  # now stores S3 key
-        owner=current_user["username"],
-        user_id=current_user["id"]
-    )
-    return JSONResponse(content=video_record)
+        # Save metadata in DB (status = "pending upload")
+        video_record = create_video(
+            filename=file.filename,
+            filepath=object_key,
+            owner=current_user["username"],
+            user_id=current_user["id"],
+            status="pending_upload"
+        )
+
+        return {
+            "upload_url": presigned_url,
+            "object_key": object_key,
+            "video_record": video_record
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not generate upload URL: {str(e)}")
+
 
 
 # ---------- Transcode ----------
