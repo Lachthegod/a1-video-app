@@ -470,7 +470,8 @@ async def dashboard(request: Request, session_id: str):
     search = request.query_params.get("search")
 
     try:
-        async with httpx.AsyncClient() as client:
+        timeout = httpx.Timeout(60.0, connect=30.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             params = {
                 "skip": skip,
                 "limit": limit,
@@ -523,7 +524,10 @@ async def upload(session_id: str, file: UploadFile = File(...)):
 
     headers = {"Authorization": f"Bearer {token}"}
 
-    async with httpx.AsyncClient() as client:
+    # Set a longer timeout (e.g., 120 seconds)
+    timeout = httpx.Timeout(120.0, connect=60.0)
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
         # Stream the file to avoid blocking
         async with client.stream(
             "POST",
@@ -531,7 +535,7 @@ async def upload(session_id: str, file: UploadFile = File(...)):
             files={"file": (file.filename, file.file, file.content_type)},
             headers=headers,
         ) as resp:
-            await resp.aread()
+            await resp.aread()  # read the response fully
 
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
@@ -561,7 +565,8 @@ async def transcode(session_id: str, video_id: int, fmt: str):
         return RedirectResponse("/", status_code=303)
 
     headers = {"Authorization": f"Bearer {token}"}
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(300.0, connect=60.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         await client.post(
             f"{API_BASE}/videos/{video_id}/transcode",
             json={"format": fmt},
@@ -594,7 +599,8 @@ async def update_metadata(
         return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
     headers = {"Authorization": f"Bearer {token}"}
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(60.0, connect=30.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         await client.put(f"{API_BASE}/videos/{video_id}", json=payload, headers=headers)
 
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
