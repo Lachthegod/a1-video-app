@@ -45,7 +45,6 @@
     <button type="submit" style="background:#6c757d">Sign Out</button>
   </form>
 
-  
   <div class="filters">
     <form method="get" action="/dashboard/{{ session_id }}">
       <input type="text" name="search" placeholder="Search filename" value="{{ search or '' }}">
@@ -61,7 +60,6 @@
       <button type="submit">Apply</button>
     </form>
   </div>
-
 
   <h2>Your Videos</h2>
   {% for v in videos if v.owner == username %}
@@ -95,7 +93,6 @@
   </div>
   {% endfor %}
 
-
   <div class="pagination" style="margin-top:20px;">
     {% if skip > 0 %}
       <a href="/dashboard/{{ session_id }}?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
@@ -110,10 +107,56 @@
   </div>
 
   <div class="upload-box">
-    <form action="/upload/{{ session_id }}" enctype="multipart/form-data" method="post">
-      <input type="file" name="file">
-      <button type="submit">Upload</button>
-    </form>
+    <h3>Upload a new video</h3>
+    <input type="file" id="file-input">
+    <button type="button" onclick="uploadFile()">Upload</button>
+    <p id="upload-status"></p>
   </div>
+
+  <script>
+  async function uploadFile() {
+      const fileInput = document.getElementById('file-input');
+      const file = fileInput.files[0];
+      if (!file) return alert("Select a file first");
+
+      const statusEl = document.getElementById('upload-status');
+      statusEl.textContent = "Requesting upload URL...";
+
+      const session_id = "{{ session_id }}";
+
+      // Step 1: Request presigned URL
+      const presignResp = await fetch(`/upload/${session_id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file.name, content_type: file.type })
+      });
+
+      if (!presignResp.ok) {
+          statusEl.textContent = "Failed to get upload URL.";
+          return;
+      }
+
+      const presignData = await presignResp.json();
+      const uploadUrl = presignData.upload_url;
+
+      // Step 2: Upload file directly to S3
+      statusEl.textContent = "Uploading to S3...";
+
+      const s3Resp = await fetch(uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type }
+      });
+
+      if (s3Resp.ok) {
+          statusEl.textContent = "Upload successful!";
+          setTimeout(() => location.reload(), 1000);
+      } else {
+          statusEl.textContent = "Upload failed: " + s3Resp.statusText;
+      }
+  }
+  </script>
+
 </body>
 </html>
+

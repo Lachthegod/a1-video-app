@@ -162,44 +162,38 @@ async def dashboard(request: Request, session_id: str):
     )
 
 @app.post("/upload/{session_id}")
-async def upload(session_id: str, file: UploadFile = File(...)):
+async def upload(session_id: str, filename: str = Form(...), content_type: str = Form(...)):
+    """
+    Generate a presigned S3 URL and return it to the client.
+    The client can then upload the file directly to S3.
+    """
     token = SESSIONS.get(session_id)
     if not token:
         return RedirectResponse("/", status_code=303)
 
     headers = {"Authorization": f"Bearer {token}"}
-    timeout = httpx.Timeout(300.0, connect=60.0)
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        # Step 1: Get presigned URL
+    # Step 1: Request backend to generate presigned URL
+    async with httpx.AsyncClient() as client:
         presign_resp = await client.post(
             f"{API_BASE}/videos/",
-            headers={**headers, "Content-Type": "application/json"},
-            json={"filename": file.filename, "content_type": file.content_type},
+            headers=headers,
+            json={"filename": filename, "content_type": content_type},
         )
         presign_resp.raise_for_status()
         presign_data = presign_resp.json()
-        upload_url = presign_data["upload_url"]
 
-        # Step 2: Stream upload directly from UploadFile
-        file.file.seek(0)  # reset pointer
-        async def file_iterator():
-            while True:
-                chunk = await file.read(1024 * 1024)  # 1 MB chunks
-                if not chunk:
-                    break
-                yield chunk
+    # Step 2: Return presigned URL to client (browser)
+    return templates.TemplateResponse(
+        "upload_presigned.html",
+        {
+            "request": {},
+            "upload_url": presign_data["upload_url"],
+            "object_key": presign_data["object_key"],
+            "session_id": session_id,
+        },
+    )
 
-        s3_resp = await client.put(
-            upload_url,
-            content=file_iterator(),
-            headers={"Content-Type": file.content_type},
-        )
-
-        if s3_resp.status_code not in (200, 201):
-            raise HTTPException(status_code=s3_resp.status_code, detail="Upload to S3 failed")
-
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
 
 
