@@ -3,7 +3,7 @@
 ######################################
 
 from fastapi import FastAPI, Form, UploadFile, File, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse,JSONResponse
 from fastapi.templating import Jinja2Templates
 import uuid
 import httpx
@@ -161,19 +161,19 @@ async def dashboard(request: Request, session_id: str):
         },
     )
 
+# -----------------------------
+# Upload video
+# -----------------------------
+
 @app.post("/upload/{session_id}")
 async def upload(session_id: str, filename: str = Form(...), content_type: str = Form(...)):
-    """
-    Generate a presigned S3 URL and return it to the client.
-    The client can then upload the file directly to S3.
-    """
     token = SESSIONS.get(session_id)
     if not token:
-        return RedirectResponse("/", status_code=303)
+        raise HTTPException(status_code=401, detail="Invalid session")
 
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Step 1: Request backend to generate presigned URL
+    # Request backend to generate presigned URL
     async with httpx.AsyncClient() as client:
         presign_resp = await client.post(
             f"{API_BASE}/videos/",
@@ -183,15 +183,12 @@ async def upload(session_id: str, filename: str = Form(...), content_type: str =
         presign_resp.raise_for_status()
         presign_data = presign_resp.json()
 
-    # Step 2: Return presigned URL to client (browser)
-    return templates.TemplateResponse(
-        "upload_presigned.html",
+    # Return JSON directly
+    return JSONResponse(
         {
-            "request": {},
             "upload_url": presign_data["upload_url"],
             "object_key": presign_data["object_key"],
-            "session_id": session_id,
-        },
+        }
     )
 
 
