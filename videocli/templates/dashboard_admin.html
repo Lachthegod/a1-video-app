@@ -133,43 +133,47 @@
 
   <script>
   async function uploadFile() {
-      const fileInput = document.getElementById('file-input');
-      const file = fileInput.files[0];
-      if (!file) return alert("Select a file first");
+    const fileInput = document.getElementById('file-input');
+    const file = fileInput.files[0];
+    if (!file) return alert("Select a file first");
 
-      const statusEl = document.getElementById('upload-status');
-      statusEl.textContent = "Requesting upload URL...";
+    const statusEl = document.getElementById('upload-status');
+    statusEl.textContent = "Requesting upload URL...";
 
-      const session_id = "{{ session_id }}";
+    const session_id = "{{ session_id }}";
 
-      const presignResp = await fetch(`/upload/${session_id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, content_type: file.type })
-      });
+    // Send FormData
+    const formData = new FormData();
+    formData.append("filename", file.name);
+    formData.append("content_type", file.type);
 
-      if (!presignResp.ok) {
-          statusEl.textContent = "Failed to get upload URL.";
-          return;
-      }
+    const presignResp = await fetch(`/upload/${session_id}`, {
+        method: "POST",
+        body: formData
+    });
 
-      const presignData = await presignResp.json();
-      const uploadUrl = presignData.upload_url;
+    if (!presignResp.ok) {
+        statusEl.textContent = "Failed to get upload URL.";
+        return;
+    }
 
-      statusEl.textContent = "Uploading to S3...";
+    const presignData = await presignResp.json();
+    const uploadUrl = presignData.upload_url;
 
-      const s3Resp = await fetch(uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type }
-      });
+    statusEl.textContent = "Uploading to S3...";
 
-      if (s3Resp.ok) {
-          statusEl.textContent = "Upload successful!";
-          setTimeout(() => location.reload(), 1000);
-      } else {
-          statusEl.textContent = "Upload failed: " + s3Resp.statusText;
-      }
+    const s3Resp = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type }
+    });
+
+    if (s3Resp.ok) {
+        statusEl.textContent = "Upload successful!";
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        statusEl.textContent = "Upload failed: " + s3Resp.statusText;
+    }
   }
   </script>
 

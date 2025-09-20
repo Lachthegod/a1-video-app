@@ -114,7 +114,7 @@
   </div>
 
   <script>
-  async function uploadFile() {
+    async function uploadFile() {
       const fileInput = document.getElementById('file-input');
       const file = fileInput.files[0];
       if (!file) return alert("Select a file first");
@@ -124,11 +124,14 @@
 
       const session_id = "{{ session_id }}";
 
-      // Step 1: Request presigned URL
+      // Send FormData
+      const formData = new FormData();
+      formData.append("filename", file.name);
+      formData.append("content_type", file.type);
+
       const presignResp = await fetch(`/upload/${session_id}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, content_type: file.type })
+          body: formData
       });
 
       if (!presignResp.ok) {
@@ -139,7 +142,6 @@
       const presignData = await presignResp.json();
       const uploadUrl = presignData.upload_url;
 
-      // Step 2: Upload file directly to S3
       statusEl.textContent = "Uploading to S3...";
 
       const s3Resp = await fetch(uploadUrl, {
