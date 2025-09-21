@@ -57,23 +57,7 @@ async def confirm(username: str = Body(...), code: str = Body(...)):
 @router.post("/login")
 async def login(username: str = Body(...), password: str = Body(...)):
     try:
-        tokens = authenticate_user(username, password)
-        # If MFA is required, Cognito returns a Challenge
-        if "ChallengeName" in tokens:
-            return {
-                "challenge_required": True,
-                "challenge": tokens["ChallengeName"],
-                "session": tokens["Session"],
-                "challenge_parameters": tokens.get("ChallengeParameters", {})
-            }
-
-        # Otherwise, return tokens to client
-        return {
-            "id_token": tokens["IdToken"],
-            "access_token": tokens["AccessToken"],
-            "refresh_token": tokens.get("RefreshToken"),
-            "expires_in": tokens.get("ExpiresIn")
-        }
+        return authenticate_user(username, password)
 
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
@@ -94,13 +78,8 @@ async def mfa(username: str = Body(...), session: str = Body(...), code: str = B
     Handle MFA challenge. Returns Cognito tokens after successful MFA.
     """
     try:
-        tokens = respond_to_mfa_challenge(username, session, code, challenge)
-        return {
-            "id_token": tokens["IdToken"],
-            "access_token": tokens["AccessToken"],
-            "refresh_token": tokens.get("RefreshToken"),
-            "expires_in": tokens.get("ExpiresIn")
-        }
+        return respond_to_mfa_challenge(username, session, code, challenge)
+    
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
 
