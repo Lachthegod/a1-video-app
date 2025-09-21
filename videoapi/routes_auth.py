@@ -26,7 +26,7 @@ JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOO
 jwks = requests.get(JWKS_URL).json()
 
 # In-memory session store (replace with Redis or DB in production)
-sessions = {}
+#sessions = {}
 
 
 @router.post("/signup")
@@ -45,22 +45,65 @@ async def confirm(username: str = Body(...), code: str = Body(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# @router.post("/login")
+# async def login(username: str = Body(...), password: str = Body(...)):
+#     try:
+#         tokens = authenticate_user(username, password)
+#         return tokens
+#     except Exception as e:
+#         raise HTTPException(status_code=401, detail=str(e))
+
+
 @router.post("/login")
 async def login(username: str = Body(...), password: str = Body(...)):
     try:
         tokens = authenticate_user(username, password)
-        return tokens
+        # If MFA is required, Cognito returns a Challenge
+        if "ChallengeName" in tokens:
+            return {
+                "challenge_required": True,
+                "challenge": tokens["ChallengeName"],
+                "session": tokens["Session"],
+                "challenge_parameters": tokens.get("ChallengeParameters", {})
+            }
+
+        # Otherwise, return tokens to client
+        return {
+            "id_token": tokens["IdToken"],
+            "access_token": tokens["AccessToken"],
+            "refresh_token": tokens.get("RefreshToken"),
+            "expires_in": tokens.get("ExpiresIn")
+        }
+
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
 
+
+
+# @router.post("/mfa")
+# async def mfa(username: str = Body(...), session: str = Body(...), code: str = Body(...), challenge: str = Body(...)):
+#     try:
+#         tokens = respond_to_mfa_challenge(username, session, code, challenge)
+#         return tokens
+#     except Exception as e:
+#         raise HTTPException(status_code=401, detail=str(e))
 
 @router.post("/mfa")
 async def mfa(username: str = Body(...), session: str = Body(...), code: str = Body(...), challenge: str = Body(...)):
+    """
+    Handle MFA challenge. Returns Cognito tokens after successful MFA.
+    """
     try:
         tokens = respond_to_mfa_challenge(username, session, code, challenge)
-        return tokens
+        return {
+            "id_token": tokens["IdToken"],
+            "access_token": tokens["AccessToken"],
+            "refresh_token": tokens.get("RefreshToken"),
+            "expires_in": tokens.get("ExpiresIn")
+        }
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
+
 
 
 @router.get("/callback")
@@ -76,7 +119,7 @@ async def cognito_callback(request: Request):
         "client_id": COGNITO_CLIENT_ID,
         "code": code,
         "redirect_uri": REDIRECT_URI,
-        "client_secret": COGNITO_CLIENT_SECRET
+        "client_secret": COGNITO_CLIENT_SECRET,
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
@@ -91,36 +134,27 @@ async def cognito_callback(request: Request):
     if not id_token:
         return {"error": "Failed to get ID token"}
 
-    # Step 2: Verify ID token signature
+    # Step 2: Verify and decode ID token
     try:
-        unverified_headers = jwt.get_unverified_header(id_token)
-        kid = unverified_headers["kid"]
-        key_data = next((k for k in jwks["keys"] if k["kid"] == kid), None)
-        if not key_data:
-            raise HTTPException(status_code=401, detail="Invalid token key")
-
-        public_key = jwk.construct(key_data)
-        message, encoded_sig = id_token.rsplit('.', 1)
-        decoded_sig = base64url_decode(encoded_sig.encode())
-        if not public_key.verify(message.encode(), decoded_sig):
-            raise HTTPException(status_code=401, detail="Invalid token signature")
-
-        payload = jwt.decode(id_token, options={"verify_signature": False})
-        # You can also validate 'aud', 'iss', 'exp' here manually if you want
+        claims = jose_jwt.decode(
+            id_token,
+            jwks,
+            algorithms=["RS256"],
+            audience=COGNITO_CLIENT_ID,
+            issuer=f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}",
+        )
     except JWTError as e:
         return {"error": f"Invalid token: {str(e)}"}
 
-    # Step 3: Generate your app session token
-    user_sub = payload.get("sub")
-    username = payload.get("cognito:username") or payload.get("email")
+    # Step 3: Redirect back to frontend with tokens (or set cookies)
+    # Option A: pass tokens in query string (less secure)
+    # dashboard_url = f"http://vidy.cab432.com:8080/dashboard?id_token={tokens['id_token']}&access_token={tokens['access_token']}"
 
-    session_token = secrets.token_urlsafe(32)  # random session ID
-    sessions[session_token] = {
-        "sub": user_sub,
-        "username": username,
-        "expires_at": time.time() + 3600  # 1 hour session
-    }
+    # Option B: set tokens in secure, HttpOnly cookies (better for web apps)
+    response = RedirectResponse(url="http://vidy.cab432.com:8080/dashboard")
+    response.set_cookie("id_token", tokens["id_token"], httponly=True, secure=True, max_age=tokens["expires_in"])
+    response.set_cookie("access_token", tokens["access_token"], httponly=True, secure=True, max_age=tokens["expires_in"])
+    if "refresh_token" in tokens:
+        response.set_cookie("refresh_token", tokens["refresh_token"], httponly=True, secure=True)
 
-    # Step 4: Redirect user to dashboard with session token
-    dashboard_url = f"http://vidy.cab432.com:8080/dashboard/{session_token}"
-    return RedirectResponse(dashboard_url)
+    return response
