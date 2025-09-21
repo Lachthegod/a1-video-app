@@ -51,32 +51,6 @@ def get_video(video_id: int):
     return JSONResponse(content=jsonable_encoder(video))
 
 
-# # ---------- Upload ----------
-# async def upload_video(request: Request, current_user: dict):
-#     form = await request.form()
-#     file = form.get("file")
-#     if not file:
-#         raise HTTPException(status_code=400, detail="No file uploaded")
-
-#     # Unique key for S3
-#     #object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
-#     object_key = f"uploads/{current_user['id']}/{file.filename}"
-
-
-#     try:
-#         file.file.seek(0)
-#         s3_client.upload_fileobj(file.file, S3_BUCKET, object_key)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-
-#     video_record = create_video(
-#         filename=file.filename,
-#         filepath=object_key,  # now stores S3 key
-#         owner=current_user["username"],
-#         user_id=current_user["id"]
-#     )
-#     return JSONResponse(content=video_record)
-
 # ---------- Upload (Presigned) ----------
 async def upload_video(request: Request, current_user: dict):
     data = await request.json()
@@ -98,7 +72,7 @@ async def upload_video(request: Request, current_user: dict):
         filepath=object_key,
         owner=current_user["username"],
         user_id=current_user["id"],
-        status="pending_upload"
+        status="Uploaded"
     )
 
     return {"upload_url": presigned_url, "object_key": object_key, "video_record": video_record}

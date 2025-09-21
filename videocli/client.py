@@ -192,7 +192,7 @@ async def upload(session_id: str, filename: str = Form(...), content_type: str =
     )
 
 
-
+#will need to add the n11715910-a2.cab432.com domain in the CORS for security reasons
 
 
 # -----------------------------

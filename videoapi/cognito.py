@@ -122,6 +122,3 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
     return response["AuthenticationResult"]
 
 
-#Will need to verify id token on backend for protected routes
-
-#https://<YOUR_COGNITO_DOMAIN>/login?response_type=code&client_id=<COGNITO_CLIENT_ID>&redirect_uri=<YOUR_CALLBACK_URL>&identity_provider=Google

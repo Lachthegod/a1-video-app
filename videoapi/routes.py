@@ -143,7 +143,3 @@ async def update_video_route(video_id: int, metadata: dict = Body(...), current_
     return {"message": "Video updated", "video": updated_video}
 
 
-
-
-
-#upload files work for big files like cold.mp4 but if you try again it will fail as the file exists already, im assuming here.
