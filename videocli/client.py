@@ -93,6 +93,7 @@ async def login_submit(request: Request, username: str = Form(...), password: st
             {
                 "request": request,
                 "username": username,
+                "password": password, 
                 "session": data["session"],
                 "challenge": data["challenge"],
             },
@@ -367,6 +368,7 @@ async def mfa_page(request: Request):
 async def mfa_submit(
     request: Request,
     username: str = Form(...),
+    password: str = Form(...),
     session: str = Form(...),
     challenge: str = Form(...),
     code: str = Form(...),
@@ -374,7 +376,7 @@ async def mfa_submit(
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{API_BASE}/auth/mfa",
-            json={"username": username, "session": session, "challenge": challenge, "code": code},
+            json={"username": username, "password": password, "session": session, "challenge": challenge, "code": code},
         )
 
     if resp.status_code != 200:
