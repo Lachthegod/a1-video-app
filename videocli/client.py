@@ -24,23 +24,21 @@ JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOO
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 API_BASE = "http://video-api:3000"
-SESSIONS = {}  # in-memory session store
+
 
 # -----------------------------
 # Async JWKS fetch
 # -----------------------------
-_jwks_cache = None
 async def get_jwks():
-    global _jwks_cache
-    if _jwks_cache is None:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(JWKS_URL)
-            _jwks_cache = resp.json()
-    return _jwks_cache
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(JWKS_URL)
+        return resp.json()
 
 # -----------------------------
 # JWT decode
 # -----------------------------
+
+
 async def decode_jwt(token: str):
     try:
         jwks = await get_jwks()
@@ -57,7 +55,6 @@ async def decode_jwt(token: str):
             algorithms=["RS256"],
             audience=COGNITO_CLIENT_ID,
         )
-
         username = payload.get("cognito:username") or payload.get("username")
         role = payload.get("cognito:groups", ["user"])[0]
         return username, role
@@ -71,31 +68,57 @@ async def decode_jwt(token: str):
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-@app.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(f"{API_BASE}/auth/login", json={"username": username, "password": password})
-        if resp.status_code != 200:
-            return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
-        data = resp.json()
 
-        if "challenge" in data:
-            session_id = str(uuid.uuid4())
-            SESSIONS[session_id] = {
+# -----------------------------
+# Handle login form
+# -----------------------------
+
+
+@app.post("/login")
+async def login_submit(request: Request, username: str = Form(...), password: str = Form(...)):
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{API_BASE}/auth/login",
+            json={"username": username, "password": password},
+        )
+
+    if resp.status_code != 200:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
+    data = resp.json()
+
+    if "challenge" in data:
+        return templates.TemplateResponse(
+            "mfa.html",
+            {
+                "request": request,
                 "username": username,
                 "session": data["session"],
                 "challenge": data["challenge"],
-            }
-            return RedirectResponse(f"/mfa/{session_id}", status_code=303)
+            },
+        )
 
-        token = data["IdToken"]
-        session_id = str(uuid.uuid4())
-        SESSIONS[session_id] = token
-        return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    # Otherwise, set token cookie and redirect
+    response = RedirectResponse("/dashboard", status_code=303)
+    response.set_cookie(
+        key="id_token",
+        value=data["IdToken"],
+        httponly=True,
+        secure=False,
+        samesite="Strict",
+        max_age=data.get("ExpiresIn", 3600),
+    )
+    return response
 
-@app.get("/dashboard/{session_id}", response_class=HTMLResponse)
-async def dashboard(request: Request, session_id: str):
-    token = SESSIONS.get(session_id)
+
+# -----------------------------
+# Dashboard
+# -----------------------------
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+
+    token = request.cookies.get("id_token")
     if not token:
         return RedirectResponse("/", status_code=303)
 
@@ -147,7 +170,6 @@ async def dashboard(request: Request, session_id: str):
         {
             "request": request,
             "videos": videos,
-            "session_id": session_id,
             "username": username,
             "role": role,
             "tasks": tasks,
@@ -165,9 +187,9 @@ async def dashboard(request: Request, session_id: str):
 # Upload video
 # -----------------------------
 
-@app.post("/upload/{session_id}")
-async def upload(session_id: str, filename: str = Form(...), content_type: str = Form(...)):
-    token = SESSIONS.get(session_id)
+@app.post("/upload")
+async def upload(request: Request, filename: str = Form(...), content_type: str = Form(...)):
+    token = request.cookies.get("id_token")
     if not token:
         raise HTTPException(status_code=401, detail="Invalid session")
 
@@ -198,9 +220,9 @@ async def upload(session_id: str, filename: str = Form(...), content_type: str =
 # -----------------------------
 # Delete video
 # -----------------------------
-@app.post("/delete/{session_id}/{video_id}")
-async def delete(session_id: str, video_id: int):
-    token = SESSIONS.get(session_id)
+@app.post("/delete/{video_id}")
+async def delete(request: Request, video_id: int):
+    token = request.cookies.get("id_token")
     if not token:
         return RedirectResponse("/", status_code=303)
 
@@ -208,15 +230,15 @@ async def delete(session_id: str, video_id: int):
     async with httpx.AsyncClient() as client:
         await client.delete(f"{API_BASE}/videos/{video_id}", headers=headers)
 
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    return RedirectResponse(f"/dashboard", status_code=303)
 
 
 # -----------------------------
 # Transcode video
 # -----------------------------
-@app.post("/transcode/{session_id}/{video_id}/{fmt}")
-async def transcode(session_id: str, video_id: int, fmt: str):
-    token = SESSIONS.get(session_id)
+@app.post("/transcode/{video_id}/{fmt}")
+async def transcode(request: Request, video_id: int, fmt: str):
+    token = request.cookies.get("id_token")
     if not token:
         return RedirectResponse("/", status_code=303)
 
@@ -229,20 +251,20 @@ async def transcode(session_id: str, video_id: int, fmt: str):
             headers=headers,
         )
 
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    return RedirectResponse(f"/dashboard", status_code=303)
 
 
 # -----------------------------
 # Update metadata
 # -----------------------------
-@app.post("/update_metadata/{session_id}/{video_id}")
+@app.post("/update_metadata/{video_id}")
 async def update_metadata(
-    session_id: str,
+    request: Request,
     video_id: int,
     title: str = Form(None),
     description: str = Form(None),
 ):
-    token = SESSIONS.get(session_id)
+    token = request.cookies.get("id_token")
     if not token:
         return RedirectResponse("/", status_code=303)
 
@@ -252,23 +274,25 @@ async def update_metadata(
     if description:
         payload["description"] = description
     if not payload:
-        return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+        return RedirectResponse(f"/dashboard", status_code=303)
 
     headers = {"Authorization": f"Bearer {token}"}
     timeout = httpx.Timeout(60.0, connect=30.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         await client.put(f"{API_BASE}/videos/{video_id}", json=payload, headers=headers)
 
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    return RedirectResponse(f"/dashboard", status_code=303)
 
 
 # -----------------------------
 # Logout
 # -----------------------------
-@app.get("/logout/{session_id}")
-async def logout(session_id: str):
-    SESSIONS.pop(session_id, None)
-    return RedirectResponse("/", status_code=303)
+
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse("/", status_code=303)
+    response.delete_cookie("id_token")
+    return response
 
 
 # -----------------------------
@@ -307,14 +331,14 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
         )
 
     if resp.status_code != 200:
-        return templates.TemplateResponse("confirm.html", {"request": request, "error": await resp.text()})
+        return templates.TemplateResponse("confirm.html", {"request": request, "error": resp.text()})
     return RedirectResponse("/", status_code=303)
 
 
 # Example for download:
-@app.get("/download/{session_id}/{video_id}")
-async def download(session_id: str, video_id: int):
-    token = SESSIONS.get(session_id)
+@app.get("/download/{video_id}")
+async def download(request: Request, video_id: int):
+    token = request.cookies.get("id_token")
     if not token:
         return RedirectResponse("/", status_code=303)
 
@@ -322,45 +346,53 @@ async def download(session_id: str, video_id: int):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{API_BASE}/videos/{video_id}/download", headers=headers)
         if resp.status_code != 200:
-            return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+            return RedirectResponse(f"/dashboard", status_code=303)
         data = resp.json()
         download_url = data.get("download_url")
         if not download_url:
-            return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+            return RedirectResponse(f"/dashboard", status_code=303)
 
         return RedirectResponse(download_url)
 
 # --- MFA routes ---
-@app.get("/mfa/{session_id}", response_class=HTMLResponse)
-async def mfa_page(request: Request, session_id: str):
-    return templates.TemplateResponse("mfa.html", {"request": request, "session_id": session_id})
+@app.get("/mfa", response_class=HTMLResponse)
+async def mfa_page(request: Request):
+    return templates.TemplateResponse("mfa.html", {"request": request})
 
-@app.post("/mfa/{session_id}")
-async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
-    session_data = SESSIONS.get(session_id)
-    if not session_data:
-        return RedirectResponse("/", status_code=303)
 
-    username = session_data["username"]
-    session_token = session_data["session"]
-    challenge = session_data["challenge"]
-
+# -----------------------------
+# MFA submit
+# -----------------------------
+@app.post("/mfa")
+async def mfa_submit(
+    request: Request,
+    username: str = Form(...),
+    session: str = Form(...),
+    challenge: str = Form(...),
+    code: str = Form(...),
+):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{API_BASE}/auth/mfa",
-            json={"username": username, "session": session_token, "code": code, "challenge": challenge},
+            json={"username": username, "session": session, "challenge": challenge, "code": code},
         )
 
     if resp.status_code != 200:
-        return templates.TemplateResponse(
-            "mfa.html",
-            {"request": request, "session_id": session_id, "error": "Invalid code"},
-        )
+        raise HTTPException(status_code=401, detail="MFA failed")
 
-    tokens = resp.json()
-    token = tokens["IdToken"]
-    SESSIONS[session_id] = token
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    data = resp.json()
+
+    response = RedirectResponse("/dashboard", status_code=303)
+    response.set_cookie(
+        key="id_token",
+        value=data["IdToken"],
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        max_age=data.get("ExpiresIn", 3600),
+    )
+    return response
+
 
 
 
