@@ -368,6 +368,7 @@ async def mfa_page(request: Request):
 async def mfa_submit(
     request: Request,
     username: str = Form(...),
+    password: str = Form(...),
     session: str = Form(...),
     challenge: str = Form(...),
     code: str = Form(...),
@@ -393,7 +394,3 @@ async def mfa_submit(
         max_age=data.get("ExpiresIn", 3600),
     )
     return response
-
-
-
-
