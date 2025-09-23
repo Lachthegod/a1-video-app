@@ -105,9 +105,6 @@ async def dashboard(request: Request, session_id: str):
     token = SESSIONS.get(session_id)
 
     if not token:
-        token = request.cookies.get("id_token")
-
-    if not token:
         return RedirectResponse("/", status_code=303)
 
     username, role = await decode_jwt(token)
@@ -376,6 +373,38 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
 # -----------------------------
 # OAuth2 Callback for Google/Cognito
 # -----------------------------
+# @app.get("/callback")
+# async def auth_callback(request: Request, code: str = None, state: str = None):
+#     if not code:
+#         raise HTTPException(status_code=400, detail="Missing code parameter")
+
+#     token_url = f"{COGNITO_DOMAIN}/oauth2/token"
+#     data = {
+#         "grant_type": "authorization_code",
+#         "client_id": COGNITO_CLIENT_ID,
+#         "client_secret": COGNITO_CLIENT_SECRET,
+#         "code": code,
+#         "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
+#     }
+#     headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+#     async with httpx.AsyncClient() as client:
+#         resp = await client.post(token_url, data=data, headers=headers)
+#         if resp.status_code != 200:
+#             raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
+#         tokens = resp.json()
+
+#     id_token = tokens.get("id_token")
+#     if not id_token:
+#         raise HTTPException(status_code=400, detail="No ID token returned")
+
+#     # Store in SESSIONS
+#     session_id = str(uuid.uuid4())
+#     SESSIONS[session_id] = id_token
+
+#     # Create response that sets a cookie AND redirects with session_id
+#     return RedirectResponse(f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}", status_code=303)
+    
 @app.get("/callback")
 async def auth_callback(request: Request, code: str = None, state: str = None):
     if not code:
@@ -397,22 +426,17 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
             raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
         tokens = resp.json()
 
-    id_token = tokens.get("id_token")
-    if not id_token:
-        raise HTTPException(status_code=400, detail="No ID token returned")
-
-    # Store in SESSIONS
+    # Normalize keys to match the password auth flow
     session_id = str(uuid.uuid4())
-    SESSIONS[session_id] = id_token
+    SESSIONS[session_id] = {
+        "AccessToken": tokens.get("access_token"),
+        "IdToken": tokens.get("id_token"),
+        "RefreshToken": tokens.get("refresh_token"),
+        "ExpiresIn": tokens.get("expires_in"),
+        "TokenType": tokens.get("token_type"),
+    }
 
-    # Create response that sets a cookie AND redirects with session_id
-    response = RedirectResponse(f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}", status_code=303)
-    response.set_cookie(
-        key="id_token",
-        value=id_token,
-        httponly=True,
-        secure=True,  # change to True if using HTTPS
-        samesite="None",
-        domain=".cab432.com"  
+    return RedirectResponse(
+        f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}",
+        status_code=303
     )
-    return response
