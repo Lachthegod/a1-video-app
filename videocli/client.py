@@ -178,6 +178,11 @@ async def dashboard(request: Request, session_id: str):
     if not token:
         logging.warning(f"No token found in SESSIONS for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
+    
+    id_token = token.get("IdToken")
+    if not id_token:
+        logging.warning(f"No IdToken found in session for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
 
     logging.info("Decoding JWT to extract username and role...")
     username, role = await decode_jwt(token)
