@@ -49,28 +49,79 @@ async def get_jwks():
 # -----------------------------
 # JWT decode
 # -----------------------------
+# async def decode_jwt(token: str):
+#     try:
+#         jwks = await get_jwks()
+#         unverified_headers = jwt.get_unverified_header(token)
+#         kid = unverified_headers["kid"]
+#         key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
+#         if not key:
+#             return None, None
+
+#         public_key = jwk.construct(key)
+#         payload = jwt.decode(
+#             token,
+#             public_key.to_pem().decode(),
+#             algorithms=["RS256"],
+#             audience=COGNITO_CLIENT_ID,
+#         )
+
+#         username = payload.get("cognito:username") or payload.get("username")
+#         role = payload.get("cognito:groups", ["user"])[0]
+#         return username, role
+#     except JWTError:
+#         return None, None
+
 async def decode_jwt(token: str):
     try:
         jwks = await get_jwks()
         unverified_headers = jwt.get_unverified_header(token)
         kid = unverified_headers["kid"]
+        logging.info(f"JWT header kid={kid}")
+
         key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
         if not key:
+            logging.warning("No matching JWK found for kid")
             return None, None
 
         public_key = jwk.construct(key)
-        payload = jwt.decode(
-            token,
-            public_key.to_pem().decode(),
-            algorithms=["RS256"],
-            audience=COGNITO_CLIENT_ID,
-        )
 
+        # Try decode with audience first (IdToken case)
+        try:
+            payload = jwt.decode(
+                token,
+                public_key.to_pem().decode(),
+                algorithms=["RS256"],
+                audience=COGNITO_CLIENT_ID,
+            )
+            logging.info("JWT successfully decoded with audience check (likely IdToken)")
+        except JWTError as e:
+            logging.warning(f"JWT audience decode failed → {e}")
+            # Fallback for AccessToken (no aud claim, but has client_id)
+            payload = jwt.decode(
+                token,
+                public_key.to_pem().decode(),
+                algorithms=["RS256"],
+            )
+            logging.info("JWT successfully decoded without audience (likely AccessToken)")
+
+        token_use = payload.get("token_use", "unknown")
         username = payload.get("cognito:username") or payload.get("username")
         role = payload.get("cognito:groups", ["user"])[0]
+
+        logging.info(
+            f"Decoded JWT → token_use={token_use}, username={username}, role={role}"
+        )
         return username, role
-    except JWTError:
+
+    except JWTError as e:
+        logging.warning(f"JWT decode error: {e}")
         return None, None
+    except Exception as e:
+        logging.error(f"Unexpected error in decode_jwt: {e}", exc_info=True)
+        return None, None
+
+
 
 # -----------------------------
 # Routes
