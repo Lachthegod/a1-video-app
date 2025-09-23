@@ -362,3 +362,36 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
     SESSIONS[session_id] = token
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
+# -----------------------------
+# OAuth2 Callback for Google/Cognito
+# -----------------------------
+@app.get("/callback")
+async def auth_callback(request: Request, code: str = None, state: str = None):
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing code parameter")
+
+    token_url = f"https://n11715910-a2.auth.{COGNITO_REGION}.amazoncognito.com/oauth2/token"
+    data = {
+        "grant_type": "authorization_code",
+        "client_id": COGNITO_CLIENT_ID,
+        "code": code,
+        "redirect_uri": "http://n11715910-a2.cab432.com:8080/callback",
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(token_url, data=data, headers=headers)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
+        tokens = resp.json()
+
+    id_token = tokens.get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=400, detail="No ID token returned")
+
+    # Store session (reuse your in-memory store)
+    session_id = str(uuid.uuid4())
+    SESSIONS[session_id] = id_token
+
+    # Redirect to dashboard with session_id
+    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
