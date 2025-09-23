@@ -10,6 +10,8 @@ import httpx
 from jose import jwt, jwk, JWTError
 import aiofiles
 
+from videoapi.routes_auth import COGNITO_DOMAIN
+
 # -----------------------------
 # Cognito Config
 # -----------------------------
@@ -370,12 +372,12 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     if not code:
         raise HTTPException(status_code=400, detail="Missing code parameter")
 
-    token_url = f"https://n11715910-a2.auth.{COGNITO_REGION}.amazoncognito.com/oauth2/token"
+    token_url = f"{COGNITO_DOMAIN}/oauth2/token"
     data = {
         "grant_type": "authorization_code",
         "client_id": COGNITO_CLIENT_ID,
         "code": code,
-        "redirect_uri": "http://n11715910-a2.cab432.com:8080/callback",
+        "redirect_uri": "http://n11715910-a2.cab432.com:8080/callback",  # must match exactly
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
@@ -389,9 +391,9 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     if not id_token:
         raise HTTPException(status_code=400, detail="No ID token returned")
 
-    # Store session (reuse your in-memory store)
+    # Store session
     session_id = str(uuid.uuid4())
     SESSIONS[session_id] = id_token
 
-    # Redirect to dashboard with session_id
     return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+
