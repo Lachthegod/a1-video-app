@@ -11,6 +11,7 @@ from jose import jwt, jwk, JWTError
 import os
 
 COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
+COGNITO_CLIENT_SECRET = os.environ.get("COGNITO_CLIENT_SECRET", "ttsd47doobrmjbrv7fbkoe4smvviop002996m1g6h47drlqq7cu")
 
 # -----------------------------
 # Cognito Config
@@ -376,8 +377,9 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     data = {
         "grant_type": "authorization_code",
         "client_id": COGNITO_CLIENT_ID,
+        "client_secret": COGNITO_CLIENT_SECRET, 
         "code": code,
-        "redirect_uri": "http://n11715910-a2.cab432.com:8080/callback",  # must match exactly
+        "redirect_uri": "http://n11715910-a2.cab432.com:8080/callback",
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
@@ -386,6 +388,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         if resp.status_code != 200:
             raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
         tokens = resp.json()
+
 
     id_token = tokens.get("id_token")
     if not id_token:
