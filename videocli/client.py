@@ -4,7 +4,7 @@
 from fastapi import FastAPI, Form, UploadFile, File, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse,JSONResponse
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+# from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 import uuid
 import httpx
 from jose import jwt, jwk, JWTError
@@ -26,7 +26,7 @@ JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOO
 # -----------------------------
 app = FastAPI()
 
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+# app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 
 templates = Jinja2Templates(directory="templates")
