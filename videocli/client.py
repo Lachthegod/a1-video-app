@@ -185,14 +185,16 @@ async def dashboard(request: Request, session_id: str):
         return RedirectResponse("/", status_code=303)
 
     logging.info("Decoding JWT to extract username and role...")
-    username, role = await decode_jwt(token)
+    # username, role = await decode_jwt(token)
+    username, role = await decode_jwt(id_token)
     if not username:
         logging.warning(f"Failed to decode JWT for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
     logging.info(f"Decoded JWT → username={username}, role={role}")
 
-    headers = {"Authorization": f"Bearer {token}"}
+    # headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {token.get('AccessToken')}"}
     videos, tasks = [], []
 
     skip = int(request.query_params.get("skip", 0))
