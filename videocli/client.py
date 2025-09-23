@@ -86,6 +86,8 @@ async def decode_jwt(token: str):
 
         public_key = jwk.construct(key)
 
+        payload = None
+
         # Try decode with audience first (IdToken case)
         try:
             payload = jwt.decode(
@@ -97,13 +99,20 @@ async def decode_jwt(token: str):
             logging.info("JWT successfully decoded with audience check (likely IdToken)")
         except JWTError as e:
             logging.warning(f"JWT audience decode failed → {e}")
-            # Fallback for AccessToken (no aud claim, but has client_id)
-            payload = jwt.decode(
-                token,
-                public_key.to_pem().decode(),
-                algorithms=["RS256"],
-            )
-            logging.info("JWT successfully decoded without audience (likely AccessToken)")
+            try:
+                # Fallback for AccessToken (no aud claim, but has client_id)
+                payload = jwt.decode(
+                    token,
+                    public_key.to_pem().decode(),
+                    algorithms=["RS256"],
+                )
+                logging.info("JWT successfully decoded without audience (likely AccessToken)")
+            except JWTError as e2:
+                logging.warning(f"JWT decode failed in both modes → {e2}")
+                return None, None
+
+        # Debugging – log the entire payload
+        logging.info(f"Full decoded JWT payload: {payload}")
 
         token_use = payload.get("token_use", "unknown")
         username = payload.get("cognito:username") or payload.get("username")
