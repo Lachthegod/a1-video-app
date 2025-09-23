@@ -402,5 +402,6 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     session_id = str(uuid.uuid4())
     SESSIONS[session_id] = id_token
 
-    return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    return RedirectResponse(f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}", status_code=303)
+
 
