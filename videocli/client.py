@@ -8,9 +8,9 @@ from fastapi.templating import Jinja2Templates
 import uuid
 import httpx
 from jose import jwt, jwk, JWTError
-import aiofiles
+import os
 
-from videoapi.routes_auth import COGNITO_DOMAIN
+COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
 
 # -----------------------------
 # Cognito Config
