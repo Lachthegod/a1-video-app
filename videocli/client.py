@@ -101,16 +101,91 @@ async def login(request: Request, username: str = Form(...), password: str = For
         SESSIONS[session_id] = token
         return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
+# @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
+# async def dashboard(request: Request, session_id: str):
+#     token = SESSIONS.get(session_id)
+
+#     if not token:
+#         return RedirectResponse("/", status_code=303)
+
+#     username, role = await decode_jwt(token)
+#     if not username:
+#         return RedirectResponse("/", status_code=303)
+
+#     headers = {"Authorization": f"Bearer {token}"}
+#     videos, tasks = [], []
+
+#     skip = int(request.query_params.get("skip", 0))
+#     limit = int(request.query_params.get("limit", 10))
+#     sort_by = request.query_params.get("sort_by", "created_at")
+#     order = request.query_params.get("order", "desc")
+#     status = request.query_params.get("status")
+#     owner_filter = request.query_params.get("owner")
+#     search = request.query_params.get("search")
+
+#     try:
+#         timeout = httpx.Timeout(60.0, connect=30.0)
+#         async with httpx.AsyncClient(timeout=timeout) as client:
+#             params = {
+#                 "skip": skip,
+#                 "limit": limit,
+#                 "sort_by": sort_by,
+#                 "order": order,
+#                 "status": status,
+#                 "owner": owner_filter,
+#                 "search": search,
+#             }
+#             resp = await client.get(f"{API_BASE}/videos/", headers=headers, params=params)
+#             resp_json = resp.json()
+#             all_videos = resp_json.get("items", [])
+
+#             if role == "admin":
+#                 videos = all_videos
+#                 resp_tasks = await client.get(f"{API_BASE}/videos/tasks", headers=headers)
+#                 if resp_tasks.status_code == 200:
+#                     tasks = resp_tasks.json()
+#             else:
+#                 videos = [v for v in all_videos if v["owner"] == username]
+
+#     except Exception as e:
+#         print("Error fetching videos:", e)
+
+#     template_name = "dashboard_admin.html" if role == "admin" else "dashboard_user.html"
+#     return templates.TemplateResponse(
+#         template_name,
+#         {
+#             "request": request,
+#             "videos": videos,
+#             "session_id": session_id,
+#             "username": username,
+#             "role": role,
+#             "tasks": tasks,
+#             "skip": skip,
+#             "limit": limit,
+#             "sort_by": sort_by,
+#             "order": order,
+#             "status": status,
+#             "owner_filter": owner_filter,
+#             "search": search,
+#         },
+#     )
+
 @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
 async def dashboard(request: Request, session_id: str):
-    token = SESSIONS.get(session_id)
+    logging.info(f"=== /dashboard endpoint hit for session_id={session_id} ===")
 
+    token = SESSIONS.get(session_id)
     if not token:
+        logging.warning(f"No token found in SESSIONS for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
+    logging.info("Decoding JWT to extract username and role...")
     username, role = await decode_jwt(token)
     if not username:
+        logging.warning(f"Failed to decode JWT for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
+
+    logging.info(f"Decoded JWT → username={username}, role={role}")
 
     headers = {"Authorization": f"Bearer {token}"}
     videos, tasks = [], []
@@ -122,6 +197,11 @@ async def dashboard(request: Request, session_id: str):
     status = request.query_params.get("status")
     owner_filter = request.query_params.get("owner")
     search = request.query_params.get("search")
+
+    logging.info(
+        f"Query params → skip={skip}, limit={limit}, sort_by={sort_by}, "
+        f"order={order}, status={status}, owner={owner_filter}, search={search}"
+    )
 
     try:
         timeout = httpx.Timeout(60.0, connect=30.0)
@@ -135,22 +215,32 @@ async def dashboard(request: Request, session_id: str):
                 "owner": owner_filter,
                 "search": search,
             }
+            logging.info(f"Requesting videos from API → {API_BASE}/videos/ with params={params}")
             resp = await client.get(f"{API_BASE}/videos/", headers=headers, params=params)
+            logging.info(f"API /videos/ response status={resp.status_code}")
+
             resp_json = resp.json()
             all_videos = resp_json.get("items", [])
+            logging.info(f"Fetched {len(all_videos)} total videos from API")
 
             if role == "admin":
+                logging.info("User is admin → fetching tasks as well")
                 videos = all_videos
                 resp_tasks = await client.get(f"{API_BASE}/videos/tasks", headers=headers)
+                logging.info(f"API /videos/tasks response status={resp_tasks.status_code}")
                 if resp_tasks.status_code == 200:
                     tasks = resp_tasks.json()
+                    logging.info(f"Fetched {len(tasks)} tasks")
             else:
                 videos = [v for v in all_videos if v["owner"] == username]
+                logging.info(f"User is normal user → filtered down to {len(videos)} videos")
 
     except Exception as e:
-        print("Error fetching videos:", e)
+        logging.error(f"Error fetching videos for session_id={session_id}: {e}", exc_info=True)
 
     template_name = "dashboard_admin.html" if role == "admin" else "dashboard_user.html"
+    logging.info(f"Rendering template={template_name} for username={username}")
+
     return templates.TemplateResponse(
         template_name,
         {
