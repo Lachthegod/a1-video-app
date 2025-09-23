@@ -411,8 +411,8 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         key="id_token",
         value=id_token,
         httponly=True,
-        secure=False,  # change to True if using HTTPS
-        samesite="lax"
+        secure=True,  # change to True if using HTTPS
+        samesite="None",
+        domain=".cab432.com"  
     )
-
     return response
