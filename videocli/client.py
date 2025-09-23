@@ -379,7 +379,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         "client_id": COGNITO_CLIENT_ID,
         "client_secret": COGNITO_CLIENT_SECRET, 
         "code": code,
-        "redirect_uri": "http://n11715910-a2.cab432.com:8080/callback",
+        "redirect_uri": "https://n11715910-a2.cab432.com:8080/callback",
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
