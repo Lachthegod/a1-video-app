@@ -17,4 +17,4 @@ s3transfer==0.13.1
 six==1.17.0
 urllib3==2.5.0
 python-jose[cryptography]==3.3.0
-
+starlette>=0.26.1
