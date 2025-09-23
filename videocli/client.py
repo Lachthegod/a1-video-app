@@ -103,6 +103,10 @@ async def login(request: Request, username: str = Form(...), password: str = For
 @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
 async def dashboard(request: Request, session_id: str):
     token = SESSIONS.get(session_id)
+
+    if not token:
+        token = request.cookies.get("id_token")
+
     if not token:
         return RedirectResponse("/", status_code=303)
 
@@ -381,7 +385,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     data = {
         "grant_type": "authorization_code",
         "client_id": COGNITO_CLIENT_ID,
-        "client_secret": COGNITO_CLIENT_SECRET, 
+        "client_secret": COGNITO_CLIENT_SECRET,
         "code": code,
         "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
     }
@@ -393,15 +397,22 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
             raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
         tokens = resp.json()
 
-
     id_token = tokens.get("id_token")
     if not id_token:
         raise HTTPException(status_code=400, detail="No ID token returned")
 
-    # Store session
+    # Store in SESSIONS
     session_id = str(uuid.uuid4())
     SESSIONS[session_id] = id_token
 
-    return RedirectResponse(f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}", status_code=303)
+    # Create response that sets a cookie AND redirects with session_id
+    response = RedirectResponse(f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}", status_code=303)
+    response.set_cookie(
+        key="id_token",
+        value=id_token,
+        httponly=True,
+        secure=False,  # change to True if using HTTPS
+        samesite="lax"
+    )
 
-
+    return response
