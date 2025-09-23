@@ -5,6 +5,7 @@
 from fastapi import FastAPI, Form, UploadFile, File, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse,JSONResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 import uuid
 import httpx
 from jose import jwt, jwk, JWTError
@@ -25,6 +26,10 @@ JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOO
 # FastAPI setup
 # -----------------------------
 app = FastAPI()
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+
 templates = Jinja2Templates(directory="templates")
 API_BASE = "http://video-api:3000"
 SESSIONS = {}  # in-memory session store
@@ -379,7 +384,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         "client_id": COGNITO_CLIENT_ID,
         "client_secret": COGNITO_CLIENT_SECRET, 
         "code": code,
-        "redirect_uri": "https://n11715910-a2.cab432.com:3001/callback",
+        "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
