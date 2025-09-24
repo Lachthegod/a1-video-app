@@ -15,7 +15,7 @@ import json
 
 
 def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
-    
+
     client = boto3.client(service_name="secretsmanager", region_name=region_name)
 
     try:
@@ -549,7 +549,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     data = {
         "grant_type": "authorization_code",
         "client_id": COGNITO_CLIENT_ID,
-        "client_secret": COGNITO_CLIENT_SECRET,
+        "client_secret": get_secret(),
         "code": code,
         "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
     }
