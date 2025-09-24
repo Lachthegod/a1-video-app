@@ -11,7 +11,7 @@ import os
 import logging
 import boto3
 from botocore.exceptions import ClientError
-import json
+import base64
 
 
 def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
@@ -534,6 +534,63 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
 # OAuth2 Callback for Google/Cognito
 # -----------------------------
 
+# @app.get("/callback")
+# async def auth_callback(request: Request, code: str = None, state: str = None):
+#     logging.info("=== /callback endpoint hit ===")
+
+#     if not code:
+#         logging.error("Missing 'code' parameter in callback URL")
+#         raise HTTPException(status_code=400, detail="Missing code parameter")
+
+#     logging.info(f"Received code: {code}")
+#     logging.info(f"Received state: {state}")
+
+#     token_url = f"{COGNITO_DOMAIN}/oauth2/token"
+#     data = {
+#         "grant_type": "authorization_code",
+#         "client_id": COGNITO_CLIENT_ID,
+#         "client_secret": get_secret(),
+#         "code": code,
+#         "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
+#     }
+#     headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+#     logging.info(f"Exchanging code for tokens at {token_url}")
+#     async with httpx.AsyncClient() as client:
+#         resp = await client.post(token_url, data=data, headers=headers)
+#         logging.info(f"Token endpoint response status: {resp.status_code}")
+#         logging.debug(f"Token endpoint response body: {resp.text}")
+
+#         if resp.status_code != 200:
+#             logging.error(f"Failed to exchange code: {resp.text}")
+#             raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
+
+#         tokens = resp.json()
+
+#     # Log what came back (don’t log secrets fully in prod — mask them!)
+#     logging.info("Successfully received tokens from Cognito")
+#     logging.debug(f"Raw tokens: {tokens}")
+#     logging.info(f"Raw tokens: {tokens}")
+
+#     session_id = str(uuid.uuid4())
+#     logging.info(f"Generated session_id: {session_id}")
+
+#     SESSIONS[session_id] = {
+#         "AccessToken": tokens.get("access_token"),
+#         "IdToken": tokens.get("id_token"),
+#         "RefreshToken": tokens.get("refresh_token"),
+#         "ExpiresIn": tokens.get("expires_in"),
+#         "TokenType": tokens.get("token_type"),
+#     }
+#     logging.info("Stored tokens in SESSIONS")
+
+#     redirect_url = f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}"
+#     logging.info(f"Redirecting user to {redirect_url}")
+
+#     return RedirectResponse(redirect_url, status_code=303)
+
+
+
 @app.get("/callback")
 async def auth_callback(request: Request, code: str = None, state: str = None):
     logging.info("=== /callback endpoint hit ===")
@@ -545,15 +602,27 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     logging.info(f"Received code: {code}")
     logging.info(f"Received state: {state}")
 
+
+
+
+
+
     token_url = f"{COGNITO_DOMAIN}/oauth2/token"
+
+    client_secret = get_secret()
+    creds = f"{COGNITO_CLIENT_ID}:{client_secret}"
+    basic_auth = base64.b64encode(creds.encode()).decode()
+
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": f"Basic {basic_auth}",  
+    }
+
     data = {
         "grant_type": "authorization_code",
-        "client_id": COGNITO_CLIENT_ID,
-        "client_secret": get_secret(),
         "code": code,
         "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
     }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     logging.info(f"Exchanging code for tokens at {token_url}")
     async with httpx.AsyncClient() as client:
@@ -588,6 +657,3 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     logging.info(f"Redirecting user to {redirect_url}")
 
     return RedirectResponse(redirect_url, status_code=303)
-
-
-
