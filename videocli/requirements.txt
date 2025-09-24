@@ -7,4 +7,3 @@ PyJWT
 requests
 python-jose[cryptography]==3.3.0
 aiofiles>=23.1.0
-starlette==0.30.0

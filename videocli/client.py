@@ -4,7 +4,6 @@
 from fastapi import FastAPI, Form, UploadFile, File, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse,JSONResponse
 from fastapi.templating import Jinja2Templates
-# from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 import uuid
 import httpx
 from jose import jwt, jwk, JWTError
@@ -26,8 +25,8 @@ JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOO
 # FastAPI setup
 # -----------------------------
 app = FastAPI()
+logging.basicConfig(level=logging.INFO)
 
-# app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 
 templates = Jinja2Templates(directory="templates")
@@ -299,11 +298,21 @@ async def upload(session_id: str, filename: str = Form(...), content_type: str =
 # -----------------------------
 @app.post("/delete/{session_id}/{video_id}")
 async def delete(session_id: str, video_id: int):
-    token = SESSIONS.get(session_id)
-    if not token:
+
+    session = SESSIONS.get(session_id)
+    if not session:
+        logging.warning(f"No session found for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+    
+    if isinstance(session, str):
+        access_token = session
+    elif isinstance(session, dict):
+        access_token = session.get("AccessToken")
+    else:
+        logging.warning(f"Invalid session type for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
     async with httpx.AsyncClient() as client:
         await client.delete(f"{API_BASE}/videos/{video_id}", headers=headers)
 
@@ -315,11 +324,21 @@ async def delete(session_id: str, video_id: int):
 # -----------------------------
 @app.post("/transcode/{session_id}/{video_id}/{fmt}")
 async def transcode(session_id: str, video_id: int, fmt: str):
-    token = SESSIONS.get(session_id)
-    if not token:
+
+    session = SESSIONS.get(session_id)
+    if not session:
+        logging.warning(f"No session found for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+    
+    if isinstance(session, str):
+        access_token = session
+    elif isinstance(session, dict):
+        access_token = session.get("AccessToken")
+    else:
+        logging.warning(f"Invalid session type for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
     timeout = httpx.Timeout(300.0, connect=60.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         await client.post(
@@ -341,8 +360,17 @@ async def update_metadata(
     title: str = Form(None),
     description: str = Form(None),
 ):
-    token = SESSIONS.get(session_id)
-    if not token:
+    session = SESSIONS.get(session_id)
+    if not session:
+        logging.warning(f"No session found for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+    
+    if isinstance(session, str):
+        access_token = session
+    elif isinstance(session, dict):
+        access_token = session.get("AccessToken")
+    else:
+        logging.warning(f"Invalid session type for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
     payload = {}
@@ -353,7 +381,7 @@ async def update_metadata(
     if not payload:
         return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
 
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
     timeout = httpx.Timeout(60.0, connect=30.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         await client.put(f"{API_BASE}/videos/{video_id}", json=payload, headers=headers)
@@ -413,11 +441,20 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
 # Example for download:
 @app.get("/download/{session_id}/{video_id}")
 async def download(session_id: str, video_id: int):
-    token = SESSIONS.get(session_id)
-    if not token:
+    session = SESSIONS.get(session_id)
+    if not session:
+        logging.warning(f"No session found for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+    
+    if isinstance(session, str):
+        access_token = session
+    elif isinstance(session, dict):
+        access_token = session.get("AccessToken")
+    else:
+        logging.warning(f"Invalid session type for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{API_BASE}/videos/{video_id}/download", headers=headers)
         if resp.status_code != 200:
@@ -464,41 +501,6 @@ async def mfa_submit(request: Request, session_id: str, code: str = Form(...)):
 # -----------------------------
 # OAuth2 Callback for Google/Cognito
 # -----------------------------
-# @app.get("/callback")
-# async def auth_callback(request: Request, code: str = None, state: str = None):
-#     if not code:
-#         raise HTTPException(status_code=400, detail="Missing code parameter")
-
-#     token_url = f"{COGNITO_DOMAIN}/oauth2/token"
-#     data = {
-#         "grant_type": "authorization_code",
-#         "client_id": COGNITO_CLIENT_ID,
-#         "client_secret": COGNITO_CLIENT_SECRET,
-#         "code": code,
-#         "redirect_uri": "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback",
-#     }
-#     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-#     async with httpx.AsyncClient() as client:
-#         resp = await client.post(token_url, data=data, headers=headers)
-#         if resp.status_code != 200:
-#             raise HTTPException(status_code=400, detail=f"Failed to exchange code: {resp.text}")
-#         tokens = resp.json()
-
-#     id_token = tokens.get("id_token")
-#     if not id_token:
-#         raise HTTPException(status_code=400, detail="No ID token returned")
-
-#     # Store in SESSIONS
-#     session_id = str(uuid.uuid4())
-#     SESSIONS[session_id] = id_token
-
-#     # Create response that sets a cookie AND redirects with session_id
-#     return RedirectResponse(f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}", status_code=303)
-    
-
-# Configure logging once (usually at app startup)
-logging.basicConfig(level=logging.INFO)
 
 @app.get("/callback")
 async def auth_callback(request: Request, code: str = None, state: str = None):
