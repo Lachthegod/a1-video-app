@@ -106,6 +106,7 @@ async def decode_jwt(token: str):
                     token,
                     public_key.to_pem().decode(),
                     algorithms=["RS256"],
+                    options={"verify_aud": False},
                 )
                 logging.info("JWT successfully decoded without audience (likely AccessToken)")
             except JWTError as e2:
