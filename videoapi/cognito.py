@@ -4,23 +4,24 @@ import hmac
 import hashlib
 import base64
 import os
+import json
 from botocore.exceptions import ClientError
 
 COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
 COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
 COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
-COGNITO_CLIENT_SECRET = os.environ.get("COGNITO_CLIENT_SECRET", "ttsd47doobrmjbrv7fbkoe4smvviop002996m1g6h47drlqq7cu")  # optional if used
+
 
 client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
 
 
 def get_secret_hash(username: str) -> str:
     """Compute Cognito secret hash if client secret is set"""
-    if not COGNITO_CLIENT_SECRET:
+    if not get_secret():
         return None
     message = username + COGNITO_CLIENT_ID
     dig = hmac.new(
-        COGNITO_CLIENT_SECRET.encode("utf-8"),
+        get_secret().encode("utf-8"),
         msg=message.encode("utf-8"),
         digestmod=hashlib.sha256
     ).digest()
@@ -122,3 +123,23 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
     return response["AuthenticationResult"]
 
 
+def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
+
+    client = boto3.client(service_name="secretsmanager", region_name=region_name)
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        raise RuntimeError(f"Error retrieving secret {secret_name}: {e}")
+
+    secret_str = get_secret_value_response.get("SecretString")
+
+    try:
+        secret_dict = json.loads(secret_str)
+        client_secret = secret_dict.get("client_secret")
+        if not client_secret:
+            raise RuntimeError(f"Secret {secret_name} does not contain 'client_secret' key")
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Secret {secret_name} is not valid JSON: {e}")
+
+    return client_secret
