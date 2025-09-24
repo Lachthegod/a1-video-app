@@ -96,6 +96,7 @@ async def decode_jwt(token: str):
                 algorithms=["RS256"],
                 audience=COGNITO_CLIENT_ID,
             )
+
             logging.info("JWT successfully decoded with audience check (likely IdToken)")
         except JWTError as e:
             logging.warning(f"JWT audience decode failed → {e}")
@@ -110,6 +111,9 @@ async def decode_jwt(token: str):
             except JWTError as e2:
                 logging.warning(f"JWT decode failed in both modes → {e2}")
                 return None, None
+            
+        aud_claim = payload.get("aud")
+        logging.info(f"IdToken aud claim: {aud_claim}, expected: {COGNITO_CLIENT_ID}")
 
         # Debugging – log the entire payload
         logging.info(f"Full decoded JWT payload: {payload}")
@@ -603,6 +607,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     # Log what came back (don’t log secrets fully in prod — mask them!)
     logging.info("Successfully received tokens from Cognito")
     logging.debug(f"Raw tokens: {tokens}")
+    logging.info(f"Raw tokens: {tokens}")
 
     session_id = str(uuid.uuid4())
     logging.info(f"Generated session_id: {session_id}")
@@ -614,7 +619,6 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         "ExpiresIn": tokens.get("expires_in"),
         "TokenType": tokens.get("token_type"),
     }
-
     logging.info("Stored tokens in SESSIONS")
 
     redirect_url = f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}"
