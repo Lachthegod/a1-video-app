@@ -9,9 +9,28 @@ import httpx
 from jose import jwt, jwk, JWTError
 import os
 import logging
+import boto3
+from botocore.exceptions import ClientError
+
+
+def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
+    session = boto3.session.Session()
+    client = session.client(service_name="secretsmanager", region_name=region_name)
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        raise RuntimeError(f"Error retrieving secret {secret_name}: {e}")
+
+    secret_str = get_secret_value_response["SecretString"]
+
+    return secret_str
+
+
+
 
 COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
-COGNITO_CLIENT_SECRET = os.environ.get("COGNITO_CLIENT_SECRET", "ttsd47doobrmjbrv7fbkoe4smvviop002996m1g6h47drlqq7cu")
+COGNITO_CLIENT_SECRET = get_secret()
 
 # -----------------------------
 # Cognito Config
@@ -567,4 +586,6 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     logging.info(f"Redirecting user to {redirect_url}")
 
     return RedirectResponse(redirect_url, status_code=303)
+
+
 
