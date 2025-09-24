@@ -229,20 +229,32 @@ async def login(request: Request, username: str = Form(...), password: str = For
 async def dashboard(request: Request, session_id: str):
     logging.info(f"=== /dashboard endpoint hit for session_id={session_id} ===")
 
-    token = SESSIONS.get(session_id)
-    if not token:
-        logging.warning(f"No token found in SESSIONS for session_id={session_id}")
+    session = SESSIONS.get(session_id)
+    if not session:
+        logging.warning(f"No session found for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
     
-    id_token = token.get("IdToken")
-    if not id_token:
-        logging.warning(f"No IdToken found in session for session_id={session_id}")
+    # Determine tokens
+    if isinstance(session, str):
+        # Manual login
+        id_token = session
+        access_token = session
+    elif isinstance(session, dict):
+        # Google login
+        id_token = session.get("IdToken")
+        access_token = session.get("AccessToken")
+    else:
+        logging.warning(f"Invalid session type for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+    
+
+    
+    if not id_token or not access_token:
+        logging.warning(f"Missing IdToken or AccessToken for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
 
     logging.info("Decoding JWT to extract username and role...")
-    # username, role = await decode_jwt(token)
-    id_token = token.get("IdToken")
-    access_token = token.get("AccessToken")
+
     username, role = await decode_jwt(id_token, access_token)
     if not username:
         logging.warning(f"Failed to decode JWT for session_id={session_id}")
@@ -250,8 +262,7 @@ async def dashboard(request: Request, session_id: str):
 
     logging.info(f"Decoded JWT → username={username}, role={role}")
 
-    # headers = {"Authorization": f"Bearer {token}"}
-    headers = {"Authorization": f"Bearer {token.get('AccessToken')}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
     videos, tasks = [], []
 
     skip = int(request.query_params.get("skip", 0))
