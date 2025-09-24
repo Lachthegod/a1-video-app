@@ -49,28 +49,6 @@ async def get_jwks():
 # -----------------------------
 # JWT decode
 # -----------------------------
-# async def decode_jwt(token: str):
-#     try:
-#         jwks = await get_jwks()
-#         unverified_headers = jwt.get_unverified_header(token)
-#         kid = unverified_headers["kid"]
-#         key = next((k for k in jwks["keys"] if k["kid"] == kid), None)
-#         if not key:
-#             return None, None
-
-#         public_key = jwk.construct(key)
-#         payload = jwt.decode(
-#             token,
-#             public_key.to_pem().decode(),
-#             algorithms=["RS256"],
-#             audience=COGNITO_CLIENT_ID,
-#         )
-
-#         username = payload.get("cognito:username") or payload.get("username")
-#         role = payload.get("cognito:groups", ["user"])[0]
-#         return username, role
-#     except JWTError:
-#         return None, None
 
 async def decode_jwt(id_token: str, access_token: str = None):
     try:
@@ -94,7 +72,7 @@ async def decode_jwt(id_token: str, access_token: str = None):
                 public_key.to_pem().decode(),
                 algorithms=["RS256"],
                 audience=COGNITO_CLIENT_ID,
-                access_token=access_token,  # provide access_token for at_hash validation
+                access_token=access_token,  
             )
             logging.info("JWT successfully decoded with audience check (likely IdToken)")
         except JWTError as e:
@@ -104,7 +82,7 @@ async def decode_jwt(id_token: str, access_token: str = None):
                     id_token,
                     public_key.to_pem().decode(),
                     algorithms=["RS256"],
-                    options={"verify_aud": False},  # fallback
+                    options={"verify_aud": False},  
                 )
                 logging.info("JWT successfully decoded without audience (likely AccessToken)")
             except JWTError as e2:
@@ -134,6 +112,8 @@ async def decode_jwt(id_token: str, access_token: str = None):
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+
+
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     async with httpx.AsyncClient() as client:
@@ -155,75 +135,11 @@ async def login(request: Request, username: str = Form(...), password: str = For
         session_id = str(uuid.uuid4())
         SESSIONS[session_id] = token
         return RedirectResponse(f"/dashboard/{session_id}", status_code=303)
+    
 
-# @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
-# async def dashboard(request: Request, session_id: str):
-#     token = SESSIONS.get(session_id)
-
-#     if not token:
-#         return RedirectResponse("/", status_code=303)
-
-#     username, role = await decode_jwt(token)
-#     if not username:
-#         return RedirectResponse("/", status_code=303)
-
-#     headers = {"Authorization": f"Bearer {token}"}
-#     videos, tasks = [], []
-
-#     skip = int(request.query_params.get("skip", 0))
-#     limit = int(request.query_params.get("limit", 10))
-#     sort_by = request.query_params.get("sort_by", "created_at")
-#     order = request.query_params.get("order", "desc")
-#     status = request.query_params.get("status")
-#     owner_filter = request.query_params.get("owner")
-#     search = request.query_params.get("search")
-
-#     try:
-#         timeout = httpx.Timeout(60.0, connect=30.0)
-#         async with httpx.AsyncClient(timeout=timeout) as client:
-#             params = {
-#                 "skip": skip,
-#                 "limit": limit,
-#                 "sort_by": sort_by,
-#                 "order": order,
-#                 "status": status,
-#                 "owner": owner_filter,
-#                 "search": search,
-#             }
-#             resp = await client.get(f"{API_BASE}/videos/", headers=headers, params=params)
-#             resp_json = resp.json()
-#             all_videos = resp_json.get("items", [])
-
-#             if role == "admin":
-#                 videos = all_videos
-#                 resp_tasks = await client.get(f"{API_BASE}/videos/tasks", headers=headers)
-#                 if resp_tasks.status_code == 200:
-#                     tasks = resp_tasks.json()
-#             else:
-#                 videos = [v for v in all_videos if v["owner"] == username]
-
-#     except Exception as e:
-#         print("Error fetching videos:", e)
-
-#     template_name = "dashboard_admin.html" if role == "admin" else "dashboard_user.html"
-#     return templates.TemplateResponse(
-#         template_name,
-#         {
-#             "request": request,
-#             "videos": videos,
-#             "session_id": session_id,
-#             "username": username,
-#             "role": role,
-#             "tasks": tasks,
-#             "skip": skip,
-#             "limit": limit,
-#             "sort_by": sort_by,
-#             "order": order,
-#             "status": status,
-#             "owner_filter": owner_filter,
-#             "search": search,
-#         },
-#     )
+# -----------------------------
+# Dashboard
+# -----------------------------
 
 @app.get("/dashboard/{session_id}", response_class=HTMLResponse)
 async def dashboard(request: Request, session_id: str):
@@ -341,11 +257,20 @@ async def dashboard(request: Request, session_id: str):
 
 @app.post("/upload/{session_id}")
 async def upload(session_id: str, filename: str = Form(...), content_type: str = Form(...)):
-    token = SESSIONS.get(session_id)
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid session")
+    session = SESSIONS.get(session_id)
+    if not session:
+        logging.warning(f"No session found for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+    
+    if isinstance(session, str):
+        access_token = session
+    elif isinstance(session, dict):
+        access_token = session.get("AccessToken")
+    else:
+        logging.warning(f"Invalid session type for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
 
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
 
     # Request backend to generate presigned URL
     async with httpx.AsyncClient() as client:
