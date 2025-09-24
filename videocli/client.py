@@ -24,12 +24,15 @@ def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
         raise RuntimeError(f"Error retrieving secret {secret_name}: {e}")
 
     secret_str = get_secret_value_response["SecretString"]
-
+    logging.info(f"client secret str", secret_str)
+    
     try:
         secret_dict = json.loads(secret_str)
     except json.JSONDecodeError:
         # If secret is just a plain string, return directly
         return secret_str
+    
+    
 
     return secret_dict.get("COGNITO_CLIENT_SECRET", secret_str)
 
