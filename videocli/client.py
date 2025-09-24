@@ -72,10 +72,10 @@ async def get_jwks():
 #     except JWTError:
 #         return None, None
 
-async def decode_jwt(token: str):
+async def decode_jwt(id_token: str, access_token: str = None):
     try:
         jwks = await get_jwks()
-        unverified_headers = jwt.get_unverified_header(token)
+        unverified_headers = jwt.get_unverified_header(id_token)
         kid = unverified_headers["kid"]
         logging.info(f"JWT header kid={kid}")
 
@@ -88,52 +88,42 @@ async def decode_jwt(token: str):
 
         payload = None
 
-        # Try decode with audience first (IdToken case)
         try:
             payload = jwt.decode(
-                token,
+                id_token,
                 public_key.to_pem().decode(),
                 algorithms=["RS256"],
                 audience=COGNITO_CLIENT_ID,
+                access_token=access_token,  # provide access_token for at_hash validation
             )
-
             logging.info("JWT successfully decoded with audience check (likely IdToken)")
         except JWTError as e:
             logging.warning(f"JWT audience decode failed → {e}")
             try:
-                # Fallback for AccessToken (no aud claim, but has client_id)
                 payload = jwt.decode(
-                    token,
+                    id_token,
                     public_key.to_pem().decode(),
                     algorithms=["RS256"],
-                    options={"verify_aud": False},
+                    options={"verify_aud": False},  # fallback
                 )
                 logging.info("JWT successfully decoded without audience (likely AccessToken)")
             except JWTError as e2:
                 logging.warning(f"JWT decode failed in both modes → {e2}")
                 return None, None
-            
-        aud_claim = payload.get("aud")
-        logging.info(f"IdToken aud claim: {aud_claim}, expected: {COGNITO_CLIENT_ID}")
 
-        # Debugging – log the entire payload
-        logging.info(f"Full decoded JWT payload: {payload}")
-
-        token_use = payload.get("token_use", "unknown")
         username = payload.get("cognito:username") or payload.get("username")
         role = payload.get("cognito:groups", ["user"])[0]
+        token_use = payload.get("token_use", "unknown")
 
-        logging.info(
-            f"Decoded JWT → token_use={token_use}, username={username}, role={role}"
-        )
+        logging.info(f"Decoded JWT → token_use={token_use}, username={username}, role={role}")
+        logging.info(f"Full decoded JWT payload: {payload}")
+
         return username, role
 
-    except JWTError as e:
-        logging.warning(f"JWT decode error: {e}")
-        return None, None
     except Exception as e:
         logging.error(f"Unexpected error in decode_jwt: {e}", exc_info=True)
         return None, None
+
 
 
 
@@ -251,7 +241,9 @@ async def dashboard(request: Request, session_id: str):
 
     logging.info("Decoding JWT to extract username and role...")
     # username, role = await decode_jwt(token)
-    username, role = await decode_jwt(id_token)
+    id_token = token.get("IdToken")
+    access_token = token.get("AccessToken")
+    username, role = await decode_jwt(id_token, access_token)
     if not username:
         logging.warning(f"Failed to decode JWT for session_id={session_id}")
         return RedirectResponse("/", status_code=303)
