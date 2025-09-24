@@ -21,6 +21,17 @@ COGNITO_USERPOOL_ID = "ap-southeast-2_KUuRLDBYK"
 COGNITO_CLIENT_ID = "1nc5drgnphkq8i4d2rusnfoa36"
 JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
 
+REDIRECT_URI = os.getenv("COGNITO_REDIRECT_URI", "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback")
+
+GOOGLE_LOGIN_URL = (
+    f"{COGNITO_DOMAIN}/login"
+    f"?response_type=code"
+    f"&client_id={COGNITO_CLIENT_ID}"
+    f"&redirect_uri={REDIRECT_URI}"
+    f"&identity_provider=Google"
+)
+
+
 # -----------------------------
 # FastAPI setup
 # -----------------------------
@@ -109,7 +120,7 @@ async def decode_jwt(id_token: str, access_token: str = None):
 # -----------------------------
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {"request": request, "google_login_url": GOOGLE_LOGIN_URL})
 
 
 
