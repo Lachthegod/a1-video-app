@@ -46,7 +46,7 @@ async def list_videos(
     owner: str | None = None,
     search: str | None = None,
 ):
-    videos = get_all_videos() 
+    videos = get_all_videos(user_id=None if current_user["role"]=="admin" else current_user["id"]) 
 
     if current_user["role"] != "admin":
         videos = [v for v in videos if v["owner"] == current_user["username"]]
@@ -71,7 +71,7 @@ async def list_videos(
 
 
 @router.get("/{video_id}")
-async def get_video_route(video_id: int, current_user: dict = Depends(get_current_user)):
+async def get_video_route(video_id: str, current_user: dict = Depends(get_current_user)):
     """Fetch a specific video, enforcing ownership/admin access"""
     video = get_video_by_id(video_id)
     if not video:

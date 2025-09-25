@@ -3,7 +3,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from videoapi.task_logger import log_transcoding_task
 from videoapi.models import (
-    create_video, get_video_by_id, list_videos, update_status, remove_video
+    create_video, get_video_by_id, list_videos, update_status, remove_video, all_videos
 )
 
 import ffmpeg
@@ -36,19 +36,27 @@ def transcode_video_file(input_path, output_path, output_format="mp4"):
 
 
 # ---------- List + Get ----------
-def get_all_videos():
-    try:
-        videos = list_videos()
-        return jsonable_encoder(videos)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# def get_all_videos():
+#     try:
+#         videos = list_videos()
+#         return jsonable_encoder(videos)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+def get_all_videos(user_id=None):
+    if user_id:
+        videos = list_videos(user_id)
+    else:
+        videos = all_videos()
+    return jsonable_encoder(videos)
 
 
-def get_video(video_id: int):
-    video = get_video_by_id(video_id)
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-    return JSONResponse(content=jsonable_encoder(video))
+
+# def get_video(video_id: int):
+#     video = get_video_by_id(current_user['id'], video_id)
+#     if not video:
+#         raise HTTPException(status_code=404, detail="Video not found")
+#     return JSONResponse(content=jsonable_encoder(video))
 
 
 # ---------- Upload (Presigned) ----------
@@ -87,7 +95,7 @@ async def transcode_video(video_id: int, request: Request, background_tasks: Bac
     if not output_format:
         raise HTTPException(status_code=400, detail="Output format is required")
 
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
@@ -134,7 +142,7 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
 # ---------- Delete ----------
 async def delete_video(video_id: int, current_user: dict):
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
@@ -146,13 +154,14 @@ async def delete_video(video_id: int, current_user: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete video: {str(e)}")
 
-    result = remove_video(video_id)
-    return {"message": "Video deleted" if result["deleted"] else "Failed to delete video"}
+    result = remove_video(current_user["id"], video_id)
+    return {"message": "Video deleted" if result else "Failed to delete video"}
+
 
 
 # ---------- Download (via pre-signed URL) ----------
 def download_video(video_id: int, current_user: dict):
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 

@@ -160,6 +160,13 @@ def list_videos(user_id):
         return resp.get("Items", [])
     except ClientError as e:
         raise Exception(f"Error listing videos: {e}")
+    
+def all_videos():
+    try:
+        resp = table.scan()
+        return resp.get("Items", [])
+    except ClientError as e:
+        raise Exception(f"Error listing all videos: {e}")
 
 
 def update_status(user_id, video_id, status):
