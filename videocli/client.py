@@ -11,7 +11,6 @@ import os
 import logging
 import boto3
 from botocore.exceptions import ClientError
-import base64
 import json
     
 
@@ -49,7 +48,7 @@ logging.basicConfig(level=logging.INFO)
 
 templates = Jinja2Templates(directory="templates")
 API_BASE = "http://video-api:3000"
-SESSIONS = {}  # in-memory session store
+SESSIONS = {}
 
 # -----------------------------
 # Async JWKS fetch

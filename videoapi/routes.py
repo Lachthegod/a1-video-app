@@ -1,4 +1,6 @@
+import asyncio
 from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, Body
+from fastapi.responses import StreamingResponse
 from videoapi.auth import get_current_user
 from videoapi.models import get_video_by_id, update_video_metadata
 import os
@@ -141,3 +143,13 @@ async def update_video_route(video_id: str, metadata: dict = Body(...), current_
     return {"message": "Video updated", "video": updated_video}
 
 
+@router.get("/{video_id}/progress/stream")
+async def stream_progress(video_id: str, current_user: dict = Depends(get_current_user)):
+    async def event_generator():
+        while True:
+            # fetch latest status from DynamoDB
+            video = get_video_by_id(current_user['id'], video_id)
+            if video:
+                yield f"data: {json.dumps(video)}\n\n"
+            await asyncio.sleep(2)  # stream updates every 2s
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
