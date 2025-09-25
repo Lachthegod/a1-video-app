@@ -75,7 +75,7 @@ async def upload_video(request: Request, current_user: dict):
 
 
 # ---------- Transcode ----------
-async def transcode_video(video_id: str, request: Request, background_tasks: BackgroundTasks, current_user: dict):
+async def transcode_video(video_id, request: Request, background_tasks: BackgroundTasks, current_user: dict):
     data = await request.json()
     output_format = data.get("format")
     if not output_format:
@@ -127,7 +127,7 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
 
 # ---------- Delete ----------
-async def delete_video(video_id: str, current_user: dict):
+async def delete_video(video_id, current_user: dict):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -146,7 +146,7 @@ async def delete_video(video_id: str, current_user: dict):
 
 
 # ---------- Download (via pre-signed URL) ----------
-def download_video(video_id: str, current_user: dict):
+def download_video(video_id, current_user: dict):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
