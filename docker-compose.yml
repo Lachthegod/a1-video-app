@@ -13,15 +13,15 @@ services:
     volumes:
       - ./uploads:/app/uploads 
 
-  video-db:
-    image: mariadb:11
-    environment:
-      - MYSQL_ROOT_PASSWORD=deeznutz
-      - MYSQL_DATABASE=video
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql 
+  # video-db:
+  #   image: mariadb:11
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=deeznutz
+  #     - MYSQL_DATABASE=video
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - db_data:/var/lib/mysql 
 
   video-client:
     build:
