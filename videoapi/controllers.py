@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from videoapi.task_logger import log_transcoding_task
 from videoapi.models import (
     create_video, get_video_by_id, list_videos, update_status, remove_video, all_videos
 )
@@ -116,14 +115,11 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         if success:
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
             update_status(user_id, video_id, status="done", format=output_format)
-            log_transcoding_task(video_id, user_id=user_id, format=output_format, status="done")
         else:
             update_status(user_id, video_id, status="failed")
-            log_transcoding_task(video_id, user_id=user_id, format=output_format, status="failed", error="Transcoding failed")
 
     except Exception as e:
         update_status(user_id, video_id, status="failed")
-        log_transcoding_task(video_id, user_id=user_id, format=output_format, status="failed", error=str(e))
 
 
 # ---------- Delete ----------
