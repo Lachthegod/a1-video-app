@@ -339,7 +339,7 @@ async def upload(session_id: str, filename: str = Form(...), content_type: str =
 # Delete video
 # -----------------------------
 @app.post("/delete/{session_id}/{video_id}")
-async def delete(session_id: str, video_id: int):
+async def delete(session_id: str, video_id: str):
 
     session = SESSIONS.get(session_id)
     if not session:

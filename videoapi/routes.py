@@ -72,7 +72,7 @@ async def list_videos(
 @router.get("/{video_id}")
 async def get_video_route(video_id: str, current_user: dict = Depends(get_current_user)):
     """Fetch a specific video, enforcing ownership/admin access"""
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
@@ -91,7 +91,7 @@ async def upload_video_route(
 
 @router.post("/{video_id}/transcode")
 async def transcode_endpoint(video_id: int,request: Request,background_tasks: BackgroundTasks,current_user: dict = Depends(get_current_user)):
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
@@ -100,13 +100,13 @@ async def transcode_endpoint(video_id: int,request: Request,background_tasks: Ba
 
 
 @router.delete("/{video_id}")
-async def delete_video_route(video_id: int, current_user: dict = Depends(get_current_user)):
+async def delete_video_route(video_id: str, current_user: dict = Depends(get_current_user)):
     return await delete_video(video_id, current_user)
 
 
 @router.get("/{video_id}/download")
 async def download_video(video_id: int, current_user: dict = Depends(get_current_user)):
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     
@@ -128,7 +128,7 @@ async def download_video(video_id: int, current_user: dict = Depends(get_current
 
 @router.put("/{video_id}")
 async def update_video_route(video_id: int, metadata: dict = Body(...), current_user: dict = Depends(get_current_user)):
-    video = get_video_by_id(video_id)
+    video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
