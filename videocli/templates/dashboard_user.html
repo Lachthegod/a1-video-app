@@ -73,20 +73,20 @@
     {% endif %}
     <p>Status: <strong>{{ v.status }}</strong></p>
 
-    <form action="/update_metadata/{{ session_id }}/{{ v.id }}" method="post">
+    <form action="/update_metadata/{{ session_id }}/{{ v.video_id }}" method="post">
       <input type="text" name="title" placeholder="Title" value="{{ v.get('title','') }}">
       <input type="text" name="description" placeholder="Description" value="{{ v.get('description','') }}">
       <button type="submit">Update Metadata</button>
     </form>
 
     <div class="video-actions">
-      <form action="/transcode/{{ session_id }}/{{ v.id }}/mp4" method="post">
+      <form action="/transcode/{{ session_id }}/{{ v.video_id }}/mp4" method="post">
         <button type="submit">Transcode</button>
       </form>
-      <form action="/delete/{{ session_id }}/{{ v.id }}" method="post">
+      <form action="/delete/{{ session_id }}/{{ v.video_id }}" method="post">
         <button type="submit" style="background:#dc3545">Delete</button>
       </form>
-      <a href="/download/{{ session_id }}/{{ v.id }}">
+      <a href="/download/{{ session_id }}/{{ v.video_id }}">
         <button type="button" style="background:#28a745">Download</button>
       </a>
     </div>
