@@ -7,7 +7,6 @@ import json
 import boto3
 from videoapi.controllers import (
     get_all_videos,
-    get_video,
     upload_video,
     transcode_video,
     delete_video
