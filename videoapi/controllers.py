@@ -36,12 +36,6 @@ def transcode_video_file(input_path, output_path, output_format="mp4"):
 
 
 # ---------- List + Get ----------
-# def get_all_videos():
-#     try:
-#         videos = list_videos()
-#         return jsonable_encoder(videos)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 def get_all_videos(user_id=None):
     if user_id:
@@ -49,14 +43,6 @@ def get_all_videos(user_id=None):
     else:
         videos = all_videos()
     return jsonable_encoder(videos)
-
-
-
-# def get_video(video_id: int):
-#     video = get_video_by_id(current_user['id'], video_id)
-#     if not video:
-#         raise HTTPException(status_code=404, detail="Video not found")
-#     return JSONResponse(content=jsonable_encoder(video))
 
 
 # ---------- Upload (Presigned) ----------
@@ -89,7 +75,7 @@ async def upload_video(request: Request, current_user: dict):
 
 
 # ---------- Transcode ----------
-async def transcode_video(video_id: int, request: Request, background_tasks: BackgroundTasks, current_user: dict):
+async def transcode_video(video_id: str, request: Request, background_tasks: BackgroundTasks, current_user: dict):
     data = await request.json()
     output_format = data.get("format")
     if not output_format:
@@ -106,7 +92,7 @@ async def transcode_video(video_id: int, request: Request, background_tasks: Bac
     base_name, _ = os.path.splitext(video["filename"])
     output_key = f"transcoded/{base_name}_{output_format}.{output_format}"
 
-    update_status(video_id, status="transcoding")
+    update_status(current_user["id"], video_id, status="transcoding")
     background_tasks.add_task(
         transcode_and_update, video_id, input_key, output_key, output_format, current_user["id"]
     )
@@ -129,19 +115,19 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
         if success:
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
-            update_status(video_id, status="done", format=output_format)
+            update_status(user_id, video_id, status="done", format=output_format)
             log_transcoding_task(video_id, user_id=user_id, format=output_format, status="done")
         else:
-            update_status(video_id, status="failed")
+            update_status(user_id, video_id, status="failed")
             log_transcoding_task(video_id, user_id=user_id, format=output_format, status="failed", error="Transcoding failed")
 
     except Exception as e:
-        update_status(video_id, status="failed")
+        update_status(user_id, video_id, status="failed")
         log_transcoding_task(video_id, user_id=user_id, format=output_format, status="failed", error=str(e))
 
 
 # ---------- Delete ----------
-async def delete_video(video_id: int, current_user: dict):
+async def delete_video(video_id: str, current_user: dict):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -160,7 +146,7 @@ async def delete_video(video_id: int, current_user: dict):
 
 
 # ---------- Download (via pre-signed URL) ----------
-def download_video(video_id: int, current_user: dict):
+def download_video(video_id: str, current_user: dict):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")

@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, status, Body, Query
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, Body
 from videoapi.auth import get_current_user
 from videoapi.models import get_video_by_id, update_video_metadata
 import os
@@ -135,7 +134,7 @@ async def update_video_route(video_id: str, metadata: dict = Body(...), current_
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to update this video")
 
-    updated_video = update_video_metadata(video_id, metadata)
+    updated_video = update_video_metadata(current_user["id"],video_id, metadata)
     if not updated_video:
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
