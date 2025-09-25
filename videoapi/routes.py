@@ -90,7 +90,7 @@ async def upload_video_route(
 
 
 @router.post("/{video_id}/transcode")
-async def transcode_endpoint(video_id: int,request: Request,background_tasks: BackgroundTasks,current_user: dict = Depends(get_current_user)):
+async def transcode_endpoint(video_id: str,request: Request,background_tasks: BackgroundTasks,current_user: dict = Depends(get_current_user)):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -105,7 +105,7 @@ async def delete_video_route(video_id: str, current_user: dict = Depends(get_cur
 
 
 @router.get("/{video_id}/download")
-async def download_video(video_id: int, current_user: dict = Depends(get_current_user)):
+async def download_video(video_id: str, current_user: dict = Depends(get_current_user)):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -127,7 +127,7 @@ async def download_video(video_id: int, current_user: dict = Depends(get_current
 
 
 @router.put("/{video_id}")
-async def update_video_route(video_id: int, metadata: dict = Body(...), current_user: dict = Depends(get_current_user)):
+async def update_video_route(video_id: str, metadata: dict = Body(...), current_user: dict = Depends(get_current_user)):
     video = get_video_by_id(current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")

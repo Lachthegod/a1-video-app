@@ -365,7 +365,7 @@ async def delete(session_id: str, video_id: str):
 # Transcode video
 # -----------------------------
 @app.post("/transcode/{session_id}/{video_id}/{fmt}")
-async def transcode(session_id: str, video_id: int, fmt: str):
+async def transcode(session_id: str, video_id: str, fmt: str):
 
     session = SESSIONS.get(session_id)
     if not session:
@@ -398,7 +398,7 @@ async def transcode(session_id: str, video_id: int, fmt: str):
 @app.post("/update_metadata/{session_id}/{video_id}")
 async def update_metadata(
     session_id: str,
-    video_id: int,
+    video_id: str,
     title: str = Form(None),
     description: str = Form(None),
 ):
@@ -482,7 +482,7 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
 
 # Example for download:
 @app.get("/download/{session_id}/{video_id}")
-async def download(session_id: str, video_id: int):
+async def download(session_id: str, video_id: str):
     session = SESSIONS.get(session_id)
     if not session:
         logging.warning(f"No session found for session_id={session_id}")
