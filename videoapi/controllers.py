@@ -181,10 +181,10 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
             update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
         else:
-            update_status_progress(user_id, video_id, status="failed", progress=0)
+            update_status_progress(user_id, video_id, status="failed-D", progress=0)
 
     except Exception as e:
-        update_status_progress(user_id, video_id, status="failed", progress=0)
+        update_status_progress(user_id, video_id, status="failed-E", progress=0)
         print(f"Transcoding failed: {e}")
 
     finally:
