@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from videoapi.models import (
-    create_video, get_video_by_id, list_videos, update_status, remove_video, all_videos
+    create_video, get_video_by_id, list_videos, update_status, remove_video, all_videos, update_status_progress
 )
 import subprocess
 import re
@@ -155,7 +155,7 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
             text=True
         )
 
-        update_status(user_id, video_id, status="transcoding", progress=0)
+        update_status_progress(user_id, video_id, status="transcoding", progress=0)
 
         for line in process.stdout:
             line = line.strip()
@@ -163,19 +163,19 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
                 # Extract milliseconds processed
                 ms = int(line.split('=')[1])
                 progress = min(int(ms / (total_duration * 1000000) * 100), 100)
-                update_status(user_id, video_id, status="transcoding", progress=progress)
+                update_status_progress(user_id, video_id, status="transcoding", progress=progress)
 
         process.wait()
 
         if process.returncode == 0:
             # Upload transcoded file to S3
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
-            update_status(user_id, video_id, status="done", progress=100, format=output_format)
+            update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
         else:
-            update_status(user_id, video_id, status="failed", progress=0)
+            update_status_progress(user_id, video_id, status="failed", progress=0)
 
     except Exception as e:
-        update_status(user_id, video_id, status="failed", progress=0)
+        update_status_progress(user_id, video_id, status="failed", progress=0)
         print(f"Transcoding failed: {e}")
 
     finally:

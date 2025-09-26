@@ -72,6 +72,36 @@ def update_status(user_id, video_id, status):
         return resp.get("Attributes")
     except ClientError as e:
         raise Exception(f"Error updating video status: {e}")
+    
+
+def update_status_progress(user_id, video_id, status, progress=None, format=None):
+
+    update_expr = ["#s = :s"]
+    expr_attr_vals = {":s": status}
+    expr_attr_names = {"#s": "status"}
+
+    if progress is not None:
+        update_expr.append("#p = :p")
+        expr_attr_vals[":p"] = progress
+        expr_attr_names["#p"] = "progress"
+
+    if format is not None:
+        update_expr.append("#f = :f")
+        expr_attr_vals[":f"] = format
+        expr_attr_names["#f"] = "format"
+
+    try:
+        resp = table.update_item(
+            Key={"user_id": user_id, "video_id": video_id},
+            UpdateExpression="SET " + ", ".join(update_expr),
+            ExpressionAttributeNames=expr_attr_names,
+            ExpressionAttributeValues=expr_attr_vals,
+            ReturnValues="ALL_NEW"
+        )
+        return resp.get("Attributes")
+    except ClientError as e:
+        raise Exception(f"Error updating video status/progress: {e}")
+
 
 
 def update_video_metadata(user_id, video_id, format=None, filename=None, title=None, description=None):
