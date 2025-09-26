@@ -124,6 +124,8 @@ async def transcode_video(video_id, request: Request, background_tasks: Backgrou
 
 
 def transcode_and_update(video_id, input_key, output_key, output_format, user_id):
+    input_path = None
+    output_path = None
     try:
         # Download input video from S3
         with tempfile.NamedTemporaryFile(delete=False) as tmp_in:
@@ -141,18 +143,22 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
              "-of", "default=noprint_wrappers=1:nokey=1", input_path],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
-        total_duration = float(result.stdout.strip())
+        try:
+            total_duration = float(result.stdout.strip())
+        except ValueError:
+            total_duration = 1  # fallback if ffprobe fails
+
         if total_duration == 0:
             total_duration = 1  # avoid division by zero
 
-
+        # Start ffmpeg process with progress pipe
         process = subprocess.Popen(
             [
                 "ffmpeg",
                 "-i", input_path,
                 "-c:v", "libx264",
                 "-c:a", "aac",
-                "-y",  
+                "-y",
                 output_path,
                 "-progress", "pipe:1",
                 "-nostats"
@@ -160,28 +166,33 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            bufsize=1  
+            bufsize=1
         )
-
 
         update_status_progress(user_id, video_id, status="transcoding", progress=0)
 
+        # Read ffmpeg progress line by line
         for line in process.stdout:
             line = line.strip()
             if line.startswith("out_time_ms"):
-                # Extract milliseconds processed
-                ms = int(line.split('=')[1])
-                progress = min(int(ms / (total_duration * 1000000) * 100), 100)
-                update_status_progress(user_id, video_id, status="transcoding", progress=progress)
+                ms_str = line.split('=')[1]
+                if ms_str == "N/A":
+                    continue
+                try:
+                    ms = int(ms_str)
+                    progress = min(int(ms / (total_duration * 1_000_000) * 100), 100)
+                    update_status_progress(user_id, video_id, status="transcoding", progress=progress)
+                except ValueError:
+                    continue  # ignore invalid numbers
 
         process.wait()
 
-        if process.returncode == 0:
+        if process.returncode == 0 and os.path.exists(output_path):
             # Upload transcoded file to S3
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
             update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
         else:
-            update_status_progress(user_id, video_id, status="failed-D", progress=0)
+            update_status_progress(user_id, video_id, status="failed", progress=0)
 
     except Exception as e:
         update_status_progress(user_id, video_id, status="failed-E", progress=0)
@@ -189,9 +200,9 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
     finally:
         # Cleanup temp files
-        if os.path.exists(input_path):
+        if input_path and os.path.exists(input_path):
             os.remove(input_path)
-        if os.path.exists(output_path):
+        if output_path and os.path.exists(output_path):
             os.remove(output_path)
 
 
