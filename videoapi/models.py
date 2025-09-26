@@ -34,11 +34,21 @@ def create_video(filename, filepath, title=None, description=None, owner=None, u
     except ClientError as e:
         raise Exception(f"Error creating video: {e}")
 
-
-def get_video_by_id(user_id, video_id):
+    
+def get_video_by_id(user_role, user_id, video_id):
     try:
-        resp = table.get_item(Key={"user_id": user_id, "video_id": video_id})
-        return resp.get("Item")
+        if user_role == "admin":
+            # Admin: scan all items until matching video_id
+            resp = table.scan(
+                FilterExpression="video_id = :vid",
+                ExpressionAttributeValues={":vid": video_id}
+            )
+            items = resp.get("Items", [])
+            return items[0] if items else None
+        else:
+            # Normal user: lookup by composite key
+            resp = table.get_item(Key={"user_id": user_id, "video_id": video_id})
+            return resp.get("Item")
     except ClientError as e:
         raise Exception(f"Error retrieving video: {e}")
 
@@ -104,7 +114,7 @@ def update_status_progress(user_id, video_id, status, progress=None, format=None
 
 
 
-def update_video_metadata(user_id, video_id, format=None, filename=None, title=None, description=None):
+def update_video_metadata(user_role, user_id, video_id, format=None, filename=None, title=None, description=None):
     update_expr = []
     expr_attr_vals = {}
     expr_attr_names = {}
@@ -130,7 +140,7 @@ def update_video_metadata(user_id, video_id, format=None, filename=None, title=N
         expr_attr_names["#d"] = "description"
 
     if not update_expr:
-        return get_video_by_id(user_id, video_id)
+        return get_video_by_id(user_role, user_id, video_id)
 
     try:
         resp = table.update_item(
