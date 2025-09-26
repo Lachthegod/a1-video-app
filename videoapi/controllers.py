@@ -145,15 +145,24 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         if total_duration == 0:
             total_duration = 1  # avoid division by zero
 
-        # Start ffmpeg process with progress pipe
+
         process = subprocess.Popen(
-            ["ffmpeg", "-i", input_path,
-             "-c:v", "libx264", "-c:a", "aac",
-             output_path, "-y", "-progress", "pipe:1", "-nostats"],
+            [
+                "ffmpeg",
+                "-i", input_path,
+                "-c:v", "libx264",
+                "-c:a", "aac",
+                "-y",  
+                output_path,
+                "-progress", "pipe:1",
+                "-nostats"
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            bufsize=1  
         )
+
 
         update_status_progress(user_id, video_id, status="transcoding", progress=0)
 
