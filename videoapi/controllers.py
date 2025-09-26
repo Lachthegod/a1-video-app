@@ -99,30 +99,6 @@ async def transcode_video(video_id, request: Request, background_tasks: Backgrou
     return {"message": "Transcoding started", "video_id": video_id}
 
 
-# def transcode_and_update(video_id, input_key, output_key, output_format, user_id):
-#     try:
-#         # Download input from S3
-#         with tempfile.NamedTemporaryFile(delete=False) as tmp_in:
-#             s3_client.download_file(S3_BUCKET, input_key, tmp_in.name)
-#             input_path = tmp_in.name
-
-#         # Prepare output temp file
-#         tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=f".{output_format}")
-#         output_path = tmp_out.name
-#         tmp_out.close()
-
-#         success = transcode_video_file(input_path, output_path, output_format)
-
-#         if success:
-#             s3_client.upload_file(output_path, S3_BUCKET, output_key)
-#             update_status(user_id, video_id, status="done", format=output_format)
-#         else:
-#             update_status(user_id, video_id, status="failed")
-
-#     except Exception as e:
-#         update_status(user_id, video_id, status="failed")
-
-
 def transcode_and_update(video_id, input_key, output_key, output_format, user_id):
     input_path = None
     output_path = None
@@ -171,19 +147,28 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
         update_status_progress(user_id, video_id, status="transcoding", progress=0)
 
-        # Read ffmpeg progress line by line
-        for line in process.stdout:
+        # # Read ffmpeg progress line by line
+        # for line in process.stdout:
+        #     line = line.strip()
+        #     if line.startswith("out_time_ms"):
+        #         ms_str = line.split('=')[1]
+        #         if ms_str == "N/A":
+        #             continue
+        #         try:
+        #             ms = int(ms_str)
+        #             progress = min(int(ms / (total_duration * 1_000_000) * 100), 100)
+        #             update_status_progress(user_id, video_id, status="transcoding", progress=progress)
+        #         except ValueError:
+        #             continue  # ignore invalid numbers
+
+        for line in iter(process.stdout.readline, ''):
             line = line.strip()
             if line.startswith("out_time_ms"):
                 ms_str = line.split('=')[1]
-                if ms_str == "N/A":
-                    continue
-                try:
+                if ms_str.isdigit():
                     ms = int(ms_str)
                     progress = min(int(ms / (total_duration * 1_000_000) * 100), 100)
                     update_status_progress(user_id, video_id, status="transcoding", progress=progress)
-                except ValueError:
-                    continue  # ignore invalid numbers
 
         process.wait()
 
