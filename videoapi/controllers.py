@@ -206,7 +206,7 @@ async def delete_video(video_id, current_user: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete video: {str(e)}")
 
-    result = remove_video(current_user["id"], video_id)
+    result = remove_video(current_user['role'],current_user["id"], video_id)
     return {"message": "Video deleted" if result else "Failed to delete video"}
 
 

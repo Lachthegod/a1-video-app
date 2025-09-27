@@ -155,9 +155,25 @@ def update_video_metadata(user_role, user_id, video_id, format=None, filename=No
         raise Exception(f"Error updating video metadata: {e}")
 
 
-def remove_video(user_id, video_id):
+def remove_video(user_role, user_id, video_id):
     try:
-        table.delete_item(Key={"user_id": user_id, "video_id": video_id})
-        return True
+        if user_role == "admin":
+            # Admins: delete by video_id only (scan for the item first)
+            response = table.scan(
+                FilterExpression="video_id = :vid",
+                ExpressionAttributeValues={":vid": video_id}
+            )
+            items = response.get("Items", [])
+            if not items:
+                return False  # video not found
+            # delete each matching item (usually just one)
+            for item in items:
+                table.delete_item(Key={"user_id": item["user_id"], "video_id": video_id})
+            return True
+        else:
+            # Regular user: delete only their own video
+            table.delete_item(Key={"user_id": user_id, "video_id": video_id})
+            return True
     except ClientError as e:
         raise Exception(f"Error deleting video: {e}")
+
