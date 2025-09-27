@@ -1,7 +1,7 @@
 import boto3
 import uuid
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 
 AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
@@ -13,7 +13,7 @@ table = dynamodb.Table(TABLE_NAME)
 
 def create_video(filename, filepath, title=None, description=None, owner=None, user_id=None, status="uploaded", format=None):
     video_id = str(uuid.uuid4())
-    created_at = datetime.utcnow().isoformat()
+    created_at = datetime.now(timezone.utc).isoformat() #datetime.utcnow().isoformat()
 
     item = {
         "user_id": user_id or "anonymous",
