@@ -19,29 +19,21 @@ from pstore_client import load_parameters
 
 parameters = load_parameters()
 
-
+# -----------------------------
+# Cognito Config
+# -----------------------------
 COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
 COGNITO_USERPOOL_ID = parameters.get("cognitouserpoolid")
 COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
 API_DOMAIN = parameters.get("domain")
 REDIRECT_URI = parameters.get("redirecturl")
-
-# -----------------------------
-# Cognito Config
-# -----------------------------
-# COGNITO_DOMAIN = f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com"
-
-
-
-COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
-
-
+COGNITO_DOMAIN = parameters.get("cognitodomain")
 
 
 JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
 TEMP_SESSIONS = {}
 GOOGLE_LOGIN_URL = (
-    f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com/login"
+    f"{COGNITO_DOMAIN}/login"
     f"?response_type=code"
     f"&client_id={COGNITO_CLIENT_ID}"
     f"&redirect_uri={REDIRECT_URI}"
@@ -132,7 +124,7 @@ async def decode_jwt(id_token: str, access_token: str = None):
 # -----------------------------
 
 
-def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
+def get_secret(secret_name="n11715910-cognito", region_name=COGNITO_REGION):
 
     client = boto3.client(service_name="secretsmanager", region_name=region_name)
 
@@ -606,7 +598,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     logging.info(f"Received code: {code}")
     logging.info(f"Received state: {state}")
 
-    token_url = f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com/oauth2/token"
+    token_url = f"{COGNITO_DOMAIN}/oauth2/token"
     data = {
         "grant_type": "authorization_code",
         "client_id": COGNITO_CLIENT_ID,

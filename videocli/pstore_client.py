@@ -13,6 +13,7 @@ def load_parameters(names=None, region_name="ap-southeast-2"):
             "/n11715910/domain",
             "/n11715910/redirecturl",
             "/n11715910/s3bucket",
+            "/n11715910/cognitodomain",
         ]
 
     ssm = boto3.client("ssm", region_name=region_name)
