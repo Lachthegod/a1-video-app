@@ -771,8 +771,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
                 "challenge": data["challenge"]
             }
             response = RedirectResponse("/mfa", status_code=303)
-            response.delete_cookie(key="session_token", path="/", domain="n11715910-a2.cab432.com")
-            response.delete_cookie(key="access_token", path="/", domain="n11715910-a2.cab432.com")
             response.set_cookie(
                 key="mfa_token",
                 value=json.dumps(mfa_payload),
@@ -786,9 +784,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
         token = data["IdToken"]
         response = RedirectResponse("/dashboard", status_code=303)
-        response.delete_cookie(key="session_token", path="/", domain="n11715910-a2.cab432.com")
-        response.delete_cookie(key="access_token", path="/", domain="n11715910-a2.cab432.com")
-
         response.set_cookie(
             key="session_token",
             value=token,
@@ -1043,8 +1038,8 @@ async def update_metadata(
 @app.get("/logout")
 async def logout():
     response = RedirectResponse("/", status_code=303)
-    response.delete_cookie(key="session_token")
-    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="session_token", path="/", domain="n11715910-a2.cab432.com")
+    response.delete_cookie(key="access_token", path="/", domain="n11715910-a2.cab432.com")
     return response
 
 
@@ -1150,8 +1145,6 @@ async def mfa_submit(request: Request, code: str = Form(...)):
     tokens = resp.json()
     id_token = tokens["IdToken"]
     response = RedirectResponse("/dashboard", status_code=303)
-    response.delete_cookie(key="session_token", path="/", domain="n11715910-a2.cab432.com")
-    response.delete_cookie(key="access_token", path="/", domain="n11715910-a2.cab432.com")
 
     response.set_cookie(
         key="session_token",
@@ -1214,8 +1207,6 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     redirect_url = f"http://n11715910-a2.cab432.com:3001/dashboard"
     response = RedirectResponse(redirect_url, status_code=303)
 
-    response.delete_cookie(key="session_token", path="/", domain="n11715910-a2.cab432.com")
-    response.delete_cookie(key="access_token", path="/", domain="n11715910-a2.cab432.com")
 
     # Set two cookies: one for IdToken, one for AccessToken
     response.set_cookie(
