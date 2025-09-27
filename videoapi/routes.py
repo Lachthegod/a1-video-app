@@ -23,7 +23,7 @@ AWS_REGION = parameters.get("awsregion", "ap-southeast-2")
 S3_BUCKET = parameters.get("s3bucket")
 
 
-s3_client = boto3.client("s3", region_name=load_parameters().get("awsregion"))
+s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 # Admin endpoint
 @router.get("/tasks")
@@ -124,7 +124,7 @@ async def download_video(video_id: str, current_user: dict = Depends(get_current
     try:
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": load_parameters().get("s3bucket"), "Key": video["filepath"]}, 
+            Params={"Bucket": S3_BUCKET, "Key": video["filepath"]}, 
             ExpiresIn=3600
         )
         return {"download_url": presigned_url}

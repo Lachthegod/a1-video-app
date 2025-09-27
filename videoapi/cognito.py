@@ -15,13 +15,13 @@ COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
 COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
 
 
-client = boto3.client("cognito-idp", region_name=load_parameters().get("awsregion"))
+client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
 
 
 def get_secret_hash(username: str) -> str:
     if not get_secret():
         return None
-    message = username + load_parameters().get("cognitoclientid")
+    message = username + COGNITO_CLIENT_ID
     dig = hmac.new(
         get_secret().encode("utf-8"),
         msg=message.encode("utf-8"),
@@ -32,7 +32,7 @@ def get_secret_hash(username: str) -> str:
 
 def sign_up_user(username: str, password: str, email: str) -> dict:
     params = {
-        "ClientId": load_parameters().get("cognitoclientid"),
+        "ClientId": COGNITO_CLIENT_ID,
         "Username": username,
         "Password": password,
         "UserAttributes": [{"Name": "email", "Value": email}],
@@ -50,7 +50,7 @@ def sign_up_user(username: str, password: str, email: str) -> dict:
 
 def confirm_user(username: str, code: str) -> dict:
     params = {
-        "ClientId": load_parameters().get("cognitoclientid"),
+        "ClientId": COGNITO_CLIENT_ID,
         "Username": username,
         "ConfirmationCode": code,
     }
@@ -72,7 +72,7 @@ def authenticate_user(username: str, password: str) -> dict:
             "USERNAME": username,
             "PASSWORD": password,
         },
-        "ClientId": load_parameters().get("cognitoclientid"),
+        "ClientId": COGNITO_CLIENT_ID,
     }
     secret_hash = get_secret_hash(username)
     if secret_hash:
@@ -99,7 +99,7 @@ def authenticate_user(username: str, password: str) -> dict:
 
 def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: str) -> dict:
     params = {
-        "ClientId": load_parameters().get("cognitoclientid"),
+        "ClientId": COGNITO_CLIENT_ID,
         "ChallengeName": challenge,
         "Session": session,
         "ChallengeResponses": {"USERNAME": username},

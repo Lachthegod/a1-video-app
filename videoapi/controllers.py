@@ -26,7 +26,7 @@ S3_BUCKET = parameters.get("s3bucket")
 
 
 
-s3_client = boto3.client("s3", region_name=load_parameters().get("awsregion"))
+s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 
 def transcode_video_file(input_path, output_path, output_format="mp4"):
@@ -63,7 +63,7 @@ async def upload_video(request: Request, current_user: dict):
 
     presigned_url = s3_client.generate_presigned_url(
         "put_object",
-        Params={"Bucket": load_parameters().get("s3bucket"), "Key": object_key, "ContentType": content_type},
+        Params={"Bucket": S3_BUCKET, "Key": object_key, "ContentType": content_type},
         ExpiresIn=3600
     )
 
@@ -109,7 +109,7 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
     output_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False) as tmp_in:
-            s3_client.download_file(load_parameters().get("s3bucket"), input_key, tmp_in.name)
+            s3_client.download_file(S3_BUCKET, input_key, tmp_in.name)
             input_path = tmp_in.name
 
         tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=f".{output_format}")
@@ -160,7 +160,7 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         process.wait()
 
         if process.returncode == 0 and os.path.exists(output_path):
-            s3_client.upload_file(output_path, load_parameters().get("s3bucket"), output_key)
+            s3_client.upload_file(output_path, S3_BUCKET, output_key)
             update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
         else:
             update_status_progress(user_id, video_id, status="failed", progress=0)
@@ -186,7 +186,7 @@ async def delete_video(video_id, current_user: dict):
         raise HTTPException(status_code=403, detail="Not authorized to modify this video")
 
     try:
-        s3_client.delete_object(Bucket=load_parameters().get("s3bucket"), Key=video["filepath"])
+        s3_client.delete_object(Bucket=S3_BUCKET, Key=video["filepath"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete video: {str(e)}")
 
@@ -206,7 +206,7 @@ def download_video(video_id, current_user: dict):
     try:
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": load_parameters().get("s3bucket"), "Key": video["filepath"]},
+            Params={"Bucket": S3_BUCKET, "Key": video["filepath"]},
             ExpiresIn=3600 
         )
         return {"download_url": presigned_url}
