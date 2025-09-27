@@ -11,7 +11,6 @@ from pstore import load_parameters
 params = load_parameters()
 
 COGNITO_REGION = params.get("awsregion", "ap-southeast-2")
-COGNITO_USERPOOL_ID = params.get("cognitouserpoolid")
 COGNITO_CLIENT_ID = params.get("cognitoclientid")
 
 
@@ -20,13 +19,13 @@ COGNITO_CLIENT_ID = params.get("cognitoclientid")
 # COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
 
 
-client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
+client = boto3.client("cognito-idp", region_name=load_parameters().get("awsregion"))
 
 
 def get_secret_hash(username: str) -> str:
     if not get_secret():
         return None
-    message = username + COGNITO_CLIENT_ID
+    message = username + load_parameters().get("cognitoclientid")
     dig = hmac.new(
         get_secret().encode("utf-8"),
         msg=message.encode("utf-8"),
@@ -37,7 +36,7 @@ def get_secret_hash(username: str) -> str:
 
 def sign_up_user(username: str, password: str, email: str) -> dict:
     params = {
-        "ClientId": COGNITO_CLIENT_ID,
+        "ClientId": load_parameters().get("cognitoclientid"),
         "Username": username,
         "Password": password,
         "UserAttributes": [{"Name": "email", "Value": email}],
@@ -55,7 +54,7 @@ def sign_up_user(username: str, password: str, email: str) -> dict:
 
 def confirm_user(username: str, code: str) -> dict:
     params = {
-        "ClientId": COGNITO_CLIENT_ID,
+        "ClientId": load_parameters().get("cognitoclientid"),
         "Username": username,
         "ConfirmationCode": code,
     }
@@ -77,7 +76,7 @@ def authenticate_user(username: str, password: str) -> dict:
             "USERNAME": username,
             "PASSWORD": password,
         },
-        "ClientId": COGNITO_CLIENT_ID,
+        "ClientId": load_parameters().get("cognitoclientid"),
     }
     secret_hash = get_secret_hash(username)
     if secret_hash:
@@ -104,7 +103,7 @@ def authenticate_user(username: str, password: str) -> dict:
 
 def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: str) -> dict:
     params = {
-        "ClientId": COGNITO_CLIENT_ID,
+        "ClientId": load_parameters().get("cognitoclientid"),
         "ChallengeName": challenge,
         "Session": session,
         "ChallengeResponses": {"USERNAME": username},

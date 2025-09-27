@@ -13,8 +13,8 @@ TABLE_NAME = params.get("s3bucket")
 # AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
 # TABLE_NAME = f"n11715910-a2"
 
-dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
-table = dynamodb.Table(TABLE_NAME)
+dynamodb = boto3.resource("dynamodb", region_name=load_parameters().get("awsregion"))
+table = dynamodb.Table(load_parameters().get("s3bucket"))
 
 
 def create_video(filename, filepath, title=None, description=None, owner=None, user_id=None, status="uploaded", format=None):
