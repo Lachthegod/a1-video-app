@@ -650,7 +650,6 @@ logging.basicConfig(level=logging.INFO)
 
 templates = Jinja2Templates(directory="templates")
 API_BASE = "http://video-api:3000"
-SESSIONS = {}
 
 # -----------------------------
 # Async JWKS fetch
@@ -719,6 +718,37 @@ async def decode_jwt(id_token: str, access_token: str = None):
     except Exception as e:
         logging.error(f"Unexpected error in decode_jwt: {e}", exc_info=True)
         return None, None
+    
+async def dashboard_from_session():
+    # Retrieve and remove the session tokens
+    tokens = TEMP_GOOGLE_SESSION_R_URL.pop()
+    if not tokens:
+        logging.warning(f"No temporary session found for session_id={session_id}")
+        return RedirectResponse("/", status_code=303)
+
+    # Set cookies once
+    response = RedirectResponse("/dashboard", status_code=303)
+    response.set_cookie(
+        key="session_token",
+        value=tokens["IdToken"],
+        httponly=True,
+        secure=False,  # True in production
+        samesite="lax",
+        path="/",
+        domain="n11715910-a2.cab432.com",
+    )
+    response.set_cookie(
+        key="access_token",
+        value=tokens["AccessToken"],
+        httponly=True,
+        secure=False,  # True in production
+        samesite="lax",
+        path="/",
+        domain="n11715910-a2.cab432.com",
+    )
+
+    logging.info(f"Set cookies and removed session_id={session_id} from TEMP_GOOGLE_SESSION_R_URL")
+    return response
 
 # -----------------------------
 # Helper to get Cognito client secret from Secrets Manager
@@ -1216,7 +1246,6 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         secure=False,  # True in production
         samesite="lax",
         path="/",
-        domain="n11715910-a2.cab432.com",
     )
     response.set_cookie(
         key="access_token",
@@ -1225,12 +1254,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         secure=False,  # True in production
         samesite="lax",
         path="/",
-        domain="n11715910-a2.cab432.com",
     )
 
     logging.info("Session cookies set; redirecting to /dashboard")
     return response
-
-
-
-
