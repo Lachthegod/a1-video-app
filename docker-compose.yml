@@ -11,7 +11,7 @@ services:
   video-client:
     build:
       context: .
-      dockerfile: ../Dockerfile.client
+      dockerfile: Dockerfile.client
     ports:
       - "3001:3001"
     depends_on:
