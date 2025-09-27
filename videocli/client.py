@@ -195,6 +195,15 @@ async def login(request: Request, username: str = Form(...), password: str = For
             path="/",
             domain=API_DOMAIN,
         )
+        response.set_cookie(
+            key="access_token",
+            value=token,
+            httponly=True,
+            secure=False, 
+            samesite="lax",
+            path="/",
+            domain=API_DOMAIN,
+        )
         return response
     
 
@@ -559,6 +568,15 @@ async def mfa_submit(request: Request, code: str = Form(...)):
 
     response.set_cookie(
         key="session_token",
+        value=id_token,
+        httponly=True,
+        secure=False, 
+        samesite="lax",
+        path="/",
+        domain=API_DOMAIN,
+    )
+    response.set_cookie(
+        key="access_token",
         value=id_token,
         httponly=True,
         secure=False, 
