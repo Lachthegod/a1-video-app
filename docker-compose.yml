@@ -8,7 +8,6 @@ services:
       - DYNAMODB_TABLE=n11715910-a2
 
 
-
   video-client:
     build:
       context: ./videocli
