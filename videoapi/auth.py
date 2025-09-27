@@ -13,20 +13,16 @@ from videoapi.pstore import load_parameters
 
 security = HTTPBearer()
 
-params = load_parameters()
+parameters = load_parameters()
 
-COGNITO_REGION = params.get("awsregion", "ap-southeast-2")
-COGNITO_USERPOOL_ID = params.get("cognitouserpoolid")
-COGNITO_CLIENT_ID = params.get("cognitoclientid")
+COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
+COGNITO_USERPOOL_ID = parameters.get("cognitouserpoolid")
+COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
 
-JWKS_URL = f"https://cognito-idp.{load_parameters().get('awsregion')}.amazonaws.com/{load_parameters().get('cognitouserpoolid')}/.well-known/jwks.json"
-ISSUER = f"https://cognito-idp.{load_parameters().get('awsregion')}.amazonaws.com/{load_parameters().get('cognitouserpoolid')}"
+JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
+ISSUER = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}"
 
 jwks = requests.get(JWKS_URL).json()
-# COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
-# COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
-# COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
-
 
 
 
@@ -36,7 +32,7 @@ def verify_token(token: str):
             token,
             jwks,
             algorithms=["RS256"],
-            audience=load_parameters().get("cognitoclientid"),
+            audience=COGNITO_CLIENT_ID,
             issuer=ISSUER,
         )
         return claims

@@ -17,13 +17,12 @@ from videoapi.pstore import load_parameters
 
 router = APIRouter()
 
-params = load_parameters()
+parameters = load_parameters()
 
-AWS_REGION = params.get("awsregion", "ap-southeast-2")
-S3_BUCKET = params.get("s3bucket")
+AWS_REGION = parameters.get("awsregion", "ap-southeast-2")
+S3_BUCKET = parameters.get("s3bucket")
 
-# AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
-# S3_BUCKET = os.getenv("S3_BUCKET", "n11715910-a2")
+
 
 
 

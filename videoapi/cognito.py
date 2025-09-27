@@ -9,15 +9,10 @@ from videoapi.pstore import load_parameters
 
 
 
-params = load_parameters()
+parameters = load_parameters()
 
-COGNITO_REGION = params.get("awsregion", "ap-southeast-2")
-COGNITO_CLIENT_ID = params.get("cognitoclientid")
-
-
-# COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
-# COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
-# COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
+COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
+COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
 
 
 client = boto3.client("cognito-idp", region_name=load_parameters().get("awsregion"))

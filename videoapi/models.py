@@ -6,13 +6,12 @@ from botocore.exceptions import ClientError
 from videoapi.pstore import load_parameters
 
 
-params = load_parameters()
+parameters = load_parameters()
 
-AWS_REGION = params.get("awsregion", "ap-southeast-2")
-TABLE_NAME = params.get("s3bucket")
+AWS_REGION = parameters.get("awsregion", "ap-southeast-2")
+TABLE_NAME = parameters.get("s3bucket")
 
-# AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
-# TABLE_NAME = f"n11715910-a2"
+
 
 dynamodb = boto3.resource("dynamodb", region_name=load_parameters().get("awsregion"))
 table = dynamodb.Table(load_parameters().get("s3bucket"))
