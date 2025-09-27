@@ -17,7 +17,6 @@ import json
 
 from pstore_client import load_parameters
 
-
 parameters = load_parameters()
 
 
@@ -30,12 +29,12 @@ REDIRECT_URI = parameters.get("redirecturl")
 # -----------------------------
 # Cognito Config
 # -----------------------------
-COGNITO_DOMAIN = f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com"
-# COGNITO_REGION = "ap-southeast-2"
-# COGNITO_USERPOOL_ID = "ap-southeast-2_KUuRLDBYK"
-# COGNITO_CLIENT_ID = "1nc5drgnphkq8i4d2rusnfoa36"
-# API_DOMAIN = os.environ.get("API_DOMAIN", "n11715910-a2.cab432.com")
-# REDIRECT_URI = os.getenv("COGNITO_REDIRECT_URI", "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback")
+# COGNITO_DOMAIN = f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com"
+
+
+
+COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
+
 
 
 
