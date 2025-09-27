@@ -12,10 +12,17 @@ import os
 import uuid
 import boto3
 
+from pstore import load_parameters
+
 router = APIRouter()
 
-AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
-S3_BUCKET = os.getenv("S3_BUCKET", "n11715910-a2")
+params = load_parameters()
+
+AWS_REGION = params.get("awsregion", "ap-southeast-2")
+S3_BUCKET = params.get("s3bucket")
+
+# AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
+# S3_BUCKET = os.getenv("S3_BUCKET", "n11715910-a2")
 
 
 

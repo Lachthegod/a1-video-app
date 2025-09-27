@@ -4,13 +4,21 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError
 import requests
 import os
+from pstore import load_parameters
 
 # -----------------------------
 # Cognito Config
 # -----------------------------
-COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
-COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
-COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
+params = load_parameters()
+
+COGNITO_REGION = params.get("awsregion", "ap-southeast-2")
+COGNITO_USERPOOL_ID = params.get("cognitouserpoolid")
+COGNITO_CLIENT_ID = params.get("cognitoclientid")
+
+
+# COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
+# COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
+# COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
 
 JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
 ISSUER = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}"
@@ -53,3 +61,5 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         "id": sub,
         "role": groups[0] if groups else "user",
     }
+
+

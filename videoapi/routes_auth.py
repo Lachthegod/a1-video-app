@@ -8,14 +8,23 @@ import os
 import jwt
 from jose import jwk, jwt as jose_jwt, JWTError
 from jose.utils import base64url_decode
+from pstore import load_parameters
+
+params = load_parameters()
+
+COGNITO_REGION = params.get("awsregion", "ap-southeast-2")
+COGNITO_USERPOOL_ID = params.get("cognitouserpoolid")
+COGNITO_CLIENT_ID = params.get("cognitoclientid")
 
 
 router = APIRouter()
 
-COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
-COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
-COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
-COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
+# COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
+# COGNITO_USERPOOL_ID = os.environ.get("COGNITO_USERPOOL_ID", "ap-southeast-2_KUuRLDBYK")
+# COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
+#COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
+
+COGNITO_DOMAIN = f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com"
 
 
 # Load Cognito JWKS once
