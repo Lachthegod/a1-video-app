@@ -1,4 +1,7 @@
 import boto3
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 def load_parameters(prefix="/n11715910", region_name="ap-southeast-2"):
     ssm = boto3.client("ssm", region_name=region_name)
@@ -13,5 +16,7 @@ def load_parameters(prefix="/n11715910", region_name="ap-southeast-2"):
     for param in response["Parameters"]:
         key = param["Name"].replace(prefix + "/", "")
         params[key] = param["Value"]
+
+    logging.info(f"Loaded parameters: {params}")
 
     return params
