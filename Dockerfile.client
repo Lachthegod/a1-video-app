@@ -1,3 +1,17 @@
+# FROM python:3.11-slim
+
+# WORKDIR /usr/src/app
+
+# COPY requirements.txt ./
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# COPY client.py .
+# COPY templates ./templates
+
+# EXPOSE 3001
+
+# CMD ["uvicorn", "client:app", "--host=0.0.0.0", "--port=3001"]
+
 FROM python:3.11-slim
 
 WORKDIR /usr/src/app
@@ -5,9 +19,8 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY client.py .
-COPY templates ./templates
+COPY videocli ./videocli  # copy the whole package
 
 EXPOSE 3001
 
-CMD ["uvicorn", "client:app", "--host=0.0.0.0", "--port=3001"]
+CMD ["uvicorn", "videocli.client:app", "--host=0.0.0.0", "--port=3001"]
