@@ -25,11 +25,11 @@ COGNITO_USERPOOL_ID = params.get("cognitouserpoolid")
 # COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "1nc5drgnphkq8i4d2rusnfoa36")
 #COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", "https://ap-southeast-2kuurldbyk.auth.ap-southeast-2.amazoncognito.com")
 
-COGNITO_DOMAIN = f"https://{load_parameters().get("cognitouserpoolid")}.auth.{load_parameters().get("awsregion")}.amazoncognito.com"
+COGNITO_DOMAIN = f"https://{load_parameters().get('cognitouserpoolid')}.auth.{load_parameters().get('awsregion')}.amazoncognito.com"
 
 
 # Load Cognito JWKS once
-JWKS_URL = f"https://cognito-idp.{load_parameters().get("awsregion")}.amazonaws.com/{load_parameters().get("cognitouserpoolid")}/.well-known/jwks.json"
+JWKS_URL = f"https://cognito-idp.{load_parameters().get('awsregion')}.amazonaws.com/{load_parameters().get('cognitouserpoolid')}/.well-known/jwks.json"
 jwks = requests.get(JWKS_URL).json()
 
 

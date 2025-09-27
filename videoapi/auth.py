@@ -18,8 +18,8 @@ COGNITO_REGION = params.get("awsregion", "ap-southeast-2")
 COGNITO_USERPOOL_ID = params.get("cognitouserpoolid")
 COGNITO_CLIENT_ID = params.get("cognitoclientid")
 
-JWKS_URL = f"https://cognito-idp.{load_parameters().get("awsregion")}.amazonaws.com/{load_parameters().get("cognitouserpoolid")}/.well-known/jwks.json"
-ISSUER = f"https://cognito-idp.{load_parameters().get("awsregion")}.amazonaws.com/{load_parameters().get("cognitouserpoolid")}"
+JWKS_URL = f"https://cognito-idp.{load_parameters().get('awsregion')}.amazonaws.com/{load_parameters().get('cognitouserpoolid')}/.well-known/jwks.json"
+ISSUER = f"https://cognito-idp.{load_parameters().get('awsregion')}.amazonaws.com/{load_parameters().get('cognitouserpoolid')}"
 
 jwks = requests.get(JWKS_URL).json()
 # COGNITO_REGION = os.environ.get("COGNITO_REGION", "ap-southeast-2")
