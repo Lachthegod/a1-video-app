@@ -46,12 +46,12 @@
 </head>
 <body>
   <h1>User Dashboard</h1>
-  <form action="/logout/{{ session_id }}" method="get" style="margin-bottom:20px;">
+  <form action="/logout" method="get" style="margin-bottom:20px;">
     <button type="submit" style="background:#6c757d">Sign Out</button>
   </form>
 
   <div class="filters">
-    <form method="get" action="/dashboard/{{ session_id }}">
+    <form method="get" action="/dashboard">
       <input type="text" name="search" placeholder="Search filename" value="{{ search or '' }}">
       <select name="sort_by">
         <option value="created_at" {% if sort_by=='created_at' %}selected{% endif %}>Created At</option>
@@ -81,20 +81,20 @@
     <!-- Live progress bar -->
     <progress id="progress-{{ v.video_id }}" value="0" max="100"></progress>
 
-    <form action="/update_metadata/{{ session_id }}/{{ v.video_id }}" method="post">
+    <form action="/update_metadata/{{ v.video_id }}" method="post">
       <input type="text" name="title" placeholder="Title" value="{{ v.get('title','') }}">
       <input type="text" name="description" placeholder="Description" value="{{ v.get('description','') }}">
       <button type="submit">Update Metadata</button>
     </form>
 
     <div class="video-actions">
-      <form action="/transcode/{{ session_id }}/{{ v.video_id }}/mp4" method="post">
+      <form action="/transcode/{{ v.video_id }}/mp4" method="post">
         <button type="submit">Transcode</button>
       </form>
-      <form action="/delete/{{ session_id }}/{{ v.video_id }}" method="post">
+      <form action="/delete/{{ v.video_id }}" method="post">
         <button type="submit" style="background:#dc3545">Delete</button>
       </form>
-      <a href="/download/{{ session_id }}/{{ v.video_id }}">
+      <a href="/download/{{ v.video_id }}">
         <button type="button" style="background:#28a745">Download</button>
       </a>
     </div>
@@ -132,12 +132,12 @@
 
   <div class="pagination" style="margin-top:20px;">
     {% if skip > 0 %}
-      <a href="/dashboard/{{ session_id }}?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
+      <a href="/dashboard?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
         <button type="button">&lt; Previous</button>
       </a>
     {% endif %}
     {% if videos|length >= limit %}
-      <a href="/dashboard/{{ session_id }}?skip={{ skip+limit }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
+      <a href="/dashboard?skip={{ skip+limit }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
         <button type="button">Next &gt;</button>
       </a>
     {% endif %}
@@ -162,13 +162,12 @@
       statusEl.textContent = "Requesting upload URL...";
       progressEl.style.display = "none";
 
-      const session_id = "{{ session_id }}";
 
       const formData = new FormData();
       formData.append("filename", file.name);
       formData.append("content_type", file.type);
 
-      const presignResp = await fetch(`/upload/${session_id}`, {
+      const presignResp = await fetch(`/upload`, {
           method: "POST",
           body: formData
       });
