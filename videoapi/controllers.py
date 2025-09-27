@@ -17,10 +17,11 @@ router = APIRouter()
 AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
 S3_BUCKET = os.getenv("S3_BUCKET", "n11715910-a2")
 
+
+
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 
-# ---------- Helper: Transcoding ----------
 def transcode_video_file(input_path, output_path, output_format="mp4"):
     try:
         (
@@ -35,7 +36,6 @@ def transcode_video_file(input_path, output_path, output_format="mp4"):
         return False
 
 
-# ---------- List + Get ----------
 
 def get_all_videos(user_id=None):
     if user_id:
@@ -45,7 +45,6 @@ def get_all_videos(user_id=None):
     return jsonable_encoder(videos)
 
 
-# ---------- Upload (Presigned) ----------
 async def upload_video(request: Request, current_user: dict):
     data = await request.json()
     filename = data.get("filename")
@@ -74,7 +73,6 @@ async def upload_video(request: Request, current_user: dict):
 
 
 
-# ---------- Transcode ----------
 async def transcode_video(video_id, request: Request, background_tasks: BackgroundTasks, current_user: dict):
     data = await request.json()
     output_format = data.get("format")
@@ -103,17 +101,14 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
     input_path = None
     output_path = None
     try:
-        # Download input video from S3
         with tempfile.NamedTemporaryFile(delete=False) as tmp_in:
             s3_client.download_file(S3_BUCKET, input_key, tmp_in.name)
             input_path = tmp_in.name
 
-        # Prepare temporary output file
         tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=f".{output_format}")
         output_path = tmp_out.name
         tmp_out.close()
 
-        # Get input video duration using ffprobe
         result = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
              "-of", "default=noprint_wrappers=1:nokey=1", input_path],
@@ -122,12 +117,11 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         try:
             total_duration = float(result.stdout.strip())
         except ValueError:
-            total_duration = 1  # fallback if ffprobe fails
+            total_duration = 1  
 
         if total_duration == 0:
-            total_duration = 1  # avoid division by zero
+            total_duration = 1  
 
-        # Start ffmpeg process with progress pipe
         process = subprocess.Popen(
             [
                 "ffmpeg",
@@ -147,20 +141,6 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
         update_status_progress(user_id, video_id, status="transcoding", progress=0)
 
-        # # Read ffmpeg progress line by line
-        # for line in process.stdout:
-        #     line = line.strip()
-        #     if line.startswith("out_time_ms"):
-        #         ms_str = line.split('=')[1]
-        #         if ms_str == "N/A":
-        #             continue
-        #         try:
-        #             ms = int(ms_str)
-        #             progress = min(int(ms / (total_duration * 1_000_000) * 100), 100)
-        #             update_status_progress(user_id, video_id, status="transcoding", progress=progress)
-        #         except ValueError:
-        #             continue  # ignore invalid numbers
-
         for line in iter(process.stdout.readline, ''):
             line = line.strip()
             if line.startswith("out_time_ms"):
@@ -173,7 +153,6 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         process.wait()
 
         if process.returncode == 0 and os.path.exists(output_path):
-            # Upload transcoded file to S3
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
             update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
         else:
@@ -184,7 +163,6 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         print(f"Transcoding failed: {e}")
 
     finally:
-        # Cleanup temp files
         if input_path and os.path.exists(input_path):
             os.remove(input_path)
         if output_path and os.path.exists(output_path):
@@ -192,7 +170,6 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
 
 
 
-# ---------- Delete ----------
 async def delete_video(video_id, current_user: dict):
     video = get_video_by_id(current_user['role'], current_user['id'], video_id)
     if not video:
@@ -211,7 +188,6 @@ async def delete_video(video_id, current_user: dict):
 
 
 
-# ---------- Download (via pre-signed URL) ----------
 def download_video(video_id, current_user: dict):
     video = get_video_by_id(current_user['role'], current_user['id'], video_id)
     if not video:
@@ -224,7 +200,7 @@ def download_video(video_id, current_user: dict):
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": S3_BUCKET, "Key": video["filepath"]},
-            ExpiresIn=3600  # 1 hour
+            ExpiresIn=3600 
         )
         return {"download_url": presigned_url}
     except Exception as e:

@@ -16,7 +16,6 @@ client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
 
 
 def get_secret_hash(username: str) -> str:
-    """Compute Cognito secret hash if client secret is set"""
     if not get_secret():
         return None
     message = username + COGNITO_CLIENT_ID
@@ -29,7 +28,6 @@ def get_secret_hash(username: str) -> str:
 
 
 def sign_up_user(username: str, password: str, email: str) -> dict:
-    """Sign up a new user"""
     params = {
         "ClientId": COGNITO_CLIENT_ID,
         "Username": username,
@@ -48,7 +46,6 @@ def sign_up_user(username: str, password: str, email: str) -> dict:
 
 
 def confirm_user(username: str, code: str) -> dict:
-    """Confirm a user with code from email"""
     params = {
         "ClientId": COGNITO_CLIENT_ID,
         "Username": username,

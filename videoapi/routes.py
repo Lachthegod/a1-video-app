@@ -17,6 +17,8 @@ router = APIRouter()
 
 AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
 S3_BUCKET = os.getenv("S3_BUCKET", "n11715910-a2")
+
+
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 # Admin endpoint
@@ -72,7 +74,7 @@ async def list_videos(
 
 @router.get("/{video_id}")
 async def get_video_route(video_id: str, current_user: dict = Depends(get_current_user)):
-    """Fetch a specific video, enforcing ownership/admin access"""
+ 
     video = get_video_by_id(current_user['role'], current_user['id'], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -114,7 +116,7 @@ async def download_video(video_id: str, current_user: dict = Depends(get_current
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to download this video")
     
-    # Generate S3 presigned URL
+    #S3 presigned URL
     try:
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
@@ -145,20 +147,15 @@ async def update_video_route(video_id: str, metadata: dict = Body(...), current_
 
 @router.get("/{video_id}/progress/stream")
 async def stream_progress(video_id: str, current_user: dict = Depends(get_current_user)):
-    """
-    SSE endpoint for streaming video progress.
-    Handles client disconnects gracefully.
-    """
     async def event_generator():
         try:
             while True:
-                # Fetch latest status from DynamoDB
                 video = get_video_by_id(current_user['role'], current_user['id'], video_id)
                 if video:
                     yield f"data: {json.dumps(video)}\n\n"
-                await asyncio.sleep(2)  # Stream updates every 2s
+                await asyncio.sleep(2)  #Stream updates 2s
         except asyncio.CancelledError:
-            # Client disconnected
+           
             print(f"Client disconnected from video {video_id} progress stream")
             return
 

@@ -38,7 +38,6 @@ def create_video(filename, filepath, title=None, description=None, owner=None, u
 def get_video_by_id(user_role, user_id, video_id):
     try:
         if user_role == "admin":
-            # Admin: scan all items until matching video_id
             resp = table.scan(
                 FilterExpression="video_id = :vid",
                 ExpressionAttributeValues={":vid": video_id}
@@ -46,7 +45,6 @@ def get_video_by_id(user_role, user_id, video_id):
             items = resp.get("Items", [])
             return items[0] if items else None
         else:
-            # Normal user: lookup by composite key
             resp = table.get_item(Key={"user_id": user_id, "video_id": video_id})
             return resp.get("Item")
     except ClientError as e:
@@ -158,7 +156,6 @@ def update_video_metadata(user_role, user_id, video_id, format=None, filename=No
 def remove_video(user_role, user_id, video_id):
     try:
         if user_role == "admin":
-            # Admins: delete by video_id only (scan for the item first)
             response = table.scan(
                 FilterExpression="video_id = :vid",
                 ExpressionAttributeValues={":vid": video_id}
@@ -166,12 +163,10 @@ def remove_video(user_role, user_id, video_id):
             items = response.get("Items", [])
             if not items:
                 return False  # video not found
-            # delete each matching item (usually just one)
             for item in items:
                 table.delete_item(Key={"user_id": item["user_id"], "video_id": video_id})
             return True
         else:
-            # Regular user: delete only their own video
             table.delete_item(Key={"user_id": user_id, "video_id": video_id})
             return True
     except ClientError as e:
