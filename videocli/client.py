@@ -272,11 +272,6 @@ async def dashboard(request: Request):
             if role == "admin":
                 logging.info("User is admin → fetching tasks as well")
                 videos = all_videos
-                resp_tasks = await client.get(f"{API_BASE}/videos/tasks", headers=headers)
-                logging.info(f"API /videos/tasks response status={resp_tasks.status_code}")
-                if resp_tasks.status_code == 200:
-                    tasks = resp_tasks.json()
-                    logging.info(f"Fetched {len(tasks)} tasks")
             else:
                 videos = [v for v in all_videos if v["owner"] == username]
                 logging.info(f"User is normal user → filtered down to {len(videos)} videos")
