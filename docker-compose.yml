@@ -10,7 +10,7 @@ services:
 
   video-client:
     build:
-      context: ./videocli
+      context: .
       dockerfile: ../Dockerfile.client
     ports:
       - "3001:3001"
