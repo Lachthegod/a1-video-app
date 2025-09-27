@@ -1,6 +1,5 @@
 fastapi           
-uvicorn           
-mariadb           
+uvicorn                      
 python-multipart  
 ffmpeg-python     
 pydantic          
