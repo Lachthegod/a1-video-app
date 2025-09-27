@@ -776,7 +776,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
                 value=json.dumps(mfa_payload),
                 httponly=True,
                 secure=False,
-                samesite="lax"
+                samesite="lax",
+                path="/",
+                domain="n11715910-a2.cab432.com",
             )
             return response
 
@@ -787,7 +789,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
             value=token,
             httponly=True,
             secure=False, 
-            samesite="lax"
+            samesite="lax",
+            path="/",
+            domain="n11715910-a2.cab432.com",
         )
         return response
     
@@ -1112,7 +1116,7 @@ async def mfa_page(request: Request):
 
 @app.post("/mfa")
 async def mfa_submit(request: Request, code: str = Form(...)):
-    mfa_session_json = request.cookies.get("session_token")
+    mfa_session_json = request.cookies.get("mfa_token")
     if not mfa_session_json:
         return RedirectResponse("/", status_code=303)
     
@@ -1145,7 +1149,9 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         value=id_token,
         httponly=True,
         secure=False, 
-        samesite="lax"
+        samesite="lax",
+        path="/",
+        domain="n11715910-a2.cab432.com",
     )
     return RedirectResponse(f"/dashboard", status_code=303)
 
@@ -1203,6 +1209,8 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         httponly=True,
         secure=False,  # True in production
         samesite="lax",
+        path="/",
+        domain="n11715910-a2.cab432.com",
     )
     response.set_cookie(
         key="access_token",
@@ -1210,6 +1218,8 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         httponly=True,
         secure=False,  # True in production
         samesite="lax",
+        path="/",
+        domain="n11715910-a2.cab432.com",
     )
 
     logging.info("Session cookies set; redirecting to /dashboard")
