@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from videoapi.routes import router as api_router
-from videoapi import routes_auth  # your Cognito signup/login routes
+from videoapi import routes_auth  
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -12,9 +12,9 @@ app = FastAPI(
     version="0.0.1",
 )
 
-# Mount routers AFTER app is created
+
 app.include_router(api_router, prefix="/videos")
-app.include_router(routes_auth.router, prefix="/auth")  # <- needs .router
+app.include_router(routes_auth.router, prefix="/auth")  
 
 if __name__ == "__main__":
     import uvicorn

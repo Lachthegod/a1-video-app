@@ -6,8 +6,7 @@ services:
     environment:
       - AWS_REGION=ap-southeast-2
       - DYNAMODB_TABLE=n11715910-a2
-    volumes:
-      - ./uploads:/app/uploads 
+
 
 
   video-client:
