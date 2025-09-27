@@ -49,8 +49,14 @@ async def list_videos(
     if search:
         videos = [v for v in videos if search.lower() in v["filename"].lower()]
 
-    if videos and sort_by in videos[0]:
-        videos.sort(key=lambda v: v.get(sort_by), reverse=(order == "desc"))
+    # if videos and sort_by in videos[0]:
+    #     videos.sort(key=lambda v: v.get(sort_by), reverse=(order == "desc"))
+
+    if videos:
+        videos.sort(
+            key=lambda v: v.get(sort_by) or "",  # fallback so None won't break sorting
+            reverse=(order == "desc")
+        )
 
     return {
         "total": len(videos),
