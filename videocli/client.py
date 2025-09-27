@@ -630,7 +630,7 @@ COGNITO_CLIENT_ID = "1nc5drgnphkq8i4d2rusnfoa36"
 JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
 
 REDIRECT_URI = os.getenv("COGNITO_REDIRECT_URI", "https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback")
-
+TEMP_SESSIONS = {}
 GOOGLE_LOGIN_URL = (
     f"{COGNITO_DOMAIN}/login"
     f"?response_type=code"
@@ -929,6 +929,21 @@ async def dashboard(request: Request):
     )
 
 # -----------------------------
+# Dashboard via temp session_id 
+# -----------------------------
+
+@app.get("/dashboard/{session_id}")
+async def dashboard_session(session_id: str):
+    tokens = TEMP_SESSIONS.pop(session_id, None)
+    if not tokens:
+        raise HTTPException(400, "Session expired")
+
+    response = RedirectResponse("/dashboard")
+    response.set_cookie("session_token", tokens["IdToken"], httponly=True, path="/")
+    response.set_cookie("access_token", tokens["AccessToken"], httponly=True, path="/")
+    return response
+
+# -----------------------------
 # Upload video
 # -----------------------------
 
@@ -1224,37 +1239,24 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
 
         tokens = resp.json()
 
-    id_token = tokens.get("id_token")
-    access_token = tokens.get("access_token")
-
-    if not id_token or not access_token:
-        logging.error("Missing IdToken or AccessToken from Cognito")
-        raise HTTPException(status_code=400, detail="Missing tokens from Cognito")
-
-    
-
+    # Log what came back (don’t log secrets fully in prod — mask them!)
     logging.info("Successfully received tokens from Cognito")
-    redirect_url = f"http://n11715910-a2.cab432.com:3001/dashboard"
-    response = RedirectResponse(redirect_url, status_code=303)
+    logging.debug(f"Raw tokens: {tokens}")
+    logging.info(f"Raw tokens: {tokens}")
 
+    session_id = str(uuid.uuid4())
+    logging.info(f"Generated session_id: {session_id}")
 
-    # Set two cookies: one for IdToken, one for AccessToken
-    response.set_cookie(
-        key="session_token",
-        value=id_token,
-        httponly=True,
-        secure=True,  # True in production
-        samesite="lax",
-        path="/",
-    )
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,  # True in production
-        samesite="none",
-        path="/",
-    )
+    TEMP_SESSIONS[session_id] = {
+        "AccessToken": tokens.get("access_token"),
+        "IdToken": tokens.get("id_token"),
+        "RefreshToken": tokens.get("refresh_token"),
+        "ExpiresIn": tokens.get("expires_in"),
+        "TokenType": tokens.get("token_type"),
+    }
+    logging.info("Stored tokens in SESSIONS")
 
-    logging.info("Session cookies set; redirecting to /dashboard")
-    return response
+    redirect_url = f"http://n11715910-a2.cab432.com:3001/dashboard/{session_id}"
+    logging.info(f"Redirecting user to {redirect_url}")
+
+    return RedirectResponse(redirect_url, status_code=303)
