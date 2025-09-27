@@ -15,7 +15,8 @@ import boto3
 from botocore.exceptions import ClientError
 import json
 
-from videoapi.pstore import load_parameters
+from videocli.pstore_client import load_parameters
+
 
 parameters = load_parameters()
 
