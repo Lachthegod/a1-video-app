@@ -4,7 +4,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError
 import requests
 import os
-from pstore import load_parameters
+from videoapi.pstore import load_parameters
+
 
 # -----------------------------
 # Cognito Config

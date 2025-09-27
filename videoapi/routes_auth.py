@@ -8,7 +8,8 @@ import os
 import jwt
 from jose import jwk, jwt as jose_jwt, JWTError
 from jose.utils import base64url_decode
-from pstore import load_parameters
+from videoapi.pstore import load_parameters
+
 
 
 router = APIRouter()

@@ -12,7 +12,8 @@ import os
 import uuid
 import boto3
 
-from pstore import load_parameters
+from videoapi.pstore import load_parameters
+
 
 router = APIRouter()
 

@@ -3,7 +3,8 @@ import uuid
 import os
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
-from pstore import load_parameters
+from videoapi.pstore import load_parameters
+
 
 params = load_parameters()
 

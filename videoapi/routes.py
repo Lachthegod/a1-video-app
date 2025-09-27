@@ -12,7 +12,8 @@ from videoapi.controllers import (
     transcode_video,
     delete_video
 )
-from pstore import load_parameters
+from videoapi.pstore import load_parameters
+
 router = APIRouter()
 
 
