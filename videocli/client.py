@@ -1039,6 +1039,7 @@ async def update_metadata(
 async def logout():
     response = RedirectResponse("/", status_code=303)
     response.delete_cookie(key="session_token")
+    response.delete_cookie(key="access_token")
     return response
 
 
