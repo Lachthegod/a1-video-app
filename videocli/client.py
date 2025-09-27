@@ -1243,7 +1243,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         key="session_token",
         value=id_token,
         httponly=True,
-        secure=False,  # True in production
+        secure=True,  # True in production
         samesite="lax",
         path="/",
     )
@@ -1251,8 +1251,8 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,  # True in production
-        samesite="lax",
+        secure=True,  # True in production
+        samesite="none",
         path="/",
     )
 
