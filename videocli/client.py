@@ -1153,7 +1153,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         path="/",
         domain="n11715910-a2.cab432.com",
     )
-    return RedirectResponse(f"/dashboard", status_code=303)
+    return response
 
 # -----------------------------
 # OAuth2 Callback for Google/Cognito
