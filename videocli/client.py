@@ -30,7 +30,7 @@ REDIRECT_URI = parameters.get("redirecturl")
 # -----------------------------
 # Cognito Config
 # -----------------------------
-COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN", f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com")
+COGNITO_DOMAIN = f"https://{COGNITO_USERPOOL_ID}.auth.{COGNITO_REGION}.amazoncognito.com"
 # COGNITO_REGION = "ap-southeast-2"
 # COGNITO_USERPOOL_ID = "ap-southeast-2_KUuRLDBYK"
 # COGNITO_CLIENT_ID = "1nc5drgnphkq8i4d2rusnfoa36"
