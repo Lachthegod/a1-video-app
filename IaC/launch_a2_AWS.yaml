@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Video Converter Infrastructure
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: n11715910-a
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: n11715910-a
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: video_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: video_id
+          KeyType: RANGE
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+        - email
+        - preferred_username
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+      AutoVerifiedAttributes:
+        - email
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+
+CognitoUserPool:
+  Type: AWS::Cognito::UserPool
+  Properties:
+    UserPoolName: n11715910-a
+    UsernameAttributes:
+      - email
+    AutoVerifiedAttributes:
+      - email
+    Policies:
+      PasswordPolicy:
+        MinimumLength: 8
+        RequireUppercase: true
+        RequireLowercase: true
+        RequireNumbers: true
+        RequireSymbols: false
+    MfaConfiguration: OPTIONAL
+    SmsConfiguration:
+      Enabled: false
+    SoftwareTokenMfaConfiguration:
+      Enabled: false
+    EmailConfiguration:
+      EmailSendingAccount: DEVELOPER
+      From: logins@cab432.com
+      FromName: CAB432 logins
+    UserPoolAddOns:
+      AdvancedSecurityMode: 'OFF'
+
+CognitoUserPoolClient:
+  Type: AWS::Cognito::UserPoolClient
+  Properties:
+    ClientName: n11715910-a
+    UserPoolId: !Ref CognitoUserPool
+    GenerateSecret: false
+    ExplicitAuthFlows:
+      - ALLOW_USER_PASSWORD_AUTH
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+    AccessTokenValidity: 60
+    IdTokenValidity: 60
+    RefreshTokenValidity: 30
+    TokenValidityUnits:
+      AccessToken: minutes
+      IdToken: minutes
+      RefreshToken: days
+    AllowedOAuthFlows:
+      - code
+    AllowedOAuthScopes:
+      - email
+      - openid
+      - profile
+    CallbackURLs:
+      - https://0uzcd4dvda.execute-api.ap-southeast-2.amazonaws.com/v1/callback
+      - https://d84l1y8p4kdic.cloudfront.net
+    LogoutURLs: []
+    SupportedIdentityProviders:
+      - COGNITO
+      - Google
+    PreventUserExistenceErrors: ENABLED
+    EnableTokenRevocation: true
+
+CognitoUserPoolDomain:
+  Type: AWS::Cognito::UserPoolDomain
+  Properties:
+    Domain: ap-southeast-2kuurldbyk
+    UserPoolId: !Ref CognitoUserPool
