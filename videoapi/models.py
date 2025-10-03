@@ -168,7 +168,7 @@ def remove_video(user_role, user_id, video_id):
             )
             items = response.get("Items", [])
             if not items:
-                return False  # video not found
+                return False  #  not found
             for item in items:
                 table.delete_item(Key={"user_id": item["user_id"], "video_id": video_id})
             return True

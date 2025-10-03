@@ -20,7 +20,7 @@ COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
 COGNITO_USERPOOL_ID = parameters.get("cognitouserpoolid")
 
 
-# Load Cognito JWKS once
+
 JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
 jwks = requests.get(JWKS_URL).json()
 

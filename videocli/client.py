@@ -366,7 +366,6 @@ async def delete(request: Request, video_id: str):
         logging.warning("No IdToken found in cookies")
         return RedirectResponse("/", status_code=303)
 
-    # If access_token is missing, fallback to using id_token (for API calls that require access token)
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
         access_token = id_token
@@ -495,7 +494,6 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
     return RedirectResponse("/", status_code=303)
 
 
-# Example for download:
 @app.get("/download/{video_id}")
 async def download(request: Request, video_id: str):
     id_token = request.cookies.get("session_token")
@@ -505,7 +503,6 @@ async def download(request: Request, video_id: str):
         logging.warning("No IdToken found in cookies")
         return RedirectResponse("/", status_code=303)
 
-    # If access_token is missing, fallback to using id_token (for API calls that require access token)
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
         access_token = id_token
@@ -615,7 +612,6 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
 
         tokens = resp.json()
 
-    # Log what came back (don’t log secrets fully in prod — mask them!)
     logging.info("Successfully received tokens from Cognito")
     logging.debug(f"Raw tokens: {tokens}")
     logging.info(f"Raw tokens: {tokens}")
