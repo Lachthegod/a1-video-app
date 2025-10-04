@@ -1,18 +1,21 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from videoapi.models import (
-    create_video, get_video_by_id, list_videos, update_status, remove_video, all_videos, update_status_progress
+from api.models import (
+    create_video,
+    get_video_by_id,
+    list_videos,
+    update_status,
+    remove_video,
+    all_videos,
+    update_status_progress,
 )
 import subprocess
-import re
 import ffmpeg
 import tempfile
 import os
-import uuid
 import boto3
 
-from videoapi.pstore import load_parameters
+from parameter_store import load_parameters
 
 
 router = APIRouter()
@@ -23,17 +26,13 @@ AWS_REGION = parameters.get("awsregion", "ap-southeast-2")
 S3_BUCKET = parameters.get("s3bucket")
 
 
-
-
-
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 
 def transcode_video_file(input_path, output_path, output_format="mp4"):
     try:
         (
-            ffmpeg
-            .input(input_path)
+            ffmpeg.input(input_path)
             .output(output_path, vcodec="libx264", acodec="aac", format=output_format)
             .run(overwrite_output=True)
         )
@@ -41,7 +40,6 @@ def transcode_video_file(input_path, output_path, output_format="mp4"):
     except Exception as e:
         print(f"Error transcoding video: {e}")
         return False
-
 
 
 def get_all_videos(user_id=None):
@@ -64,7 +62,7 @@ async def upload_video(request: Request, current_user: dict):
     presigned_url = s3_client.generate_presigned_url(
         "put_object",
         Params={"Bucket": S3_BUCKET, "Key": object_key, "ContentType": content_type},
-        ExpiresIn=3600
+        ExpiresIn=3600,
     )
 
     video_record = create_video(
@@ -72,26 +70,32 @@ async def upload_video(request: Request, current_user: dict):
         filepath=object_key,
         owner=current_user["username"],
         user_id=current_user["id"],
-        status="Uploaded"
+        status="Uploaded",
     )
 
-    return {"upload_url": presigned_url, "object_key": object_key, "video_record": video_record}
+    return {
+        "upload_url": presigned_url,
+        "object_key": object_key,
+        "video_record": video_record,
+    }
 
 
-
-
-async def transcode_video(video_id, request: Request, background_tasks: BackgroundTasks, current_user: dict):
+async def transcode_video(
+    video_id, request: Request, background_tasks: BackgroundTasks, current_user: dict
+):
     data = await request.json()
     output_format = data.get("format")
     if not output_format:
         raise HTTPException(status_code=400, detail="Output format is required")
 
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to transcode this video")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to transcode this video"
+        )
 
     input_key = video["filepath"]
     base_name, _ = os.path.splitext(video["filename"])
@@ -99,7 +103,12 @@ async def transcode_video(video_id, request: Request, background_tasks: Backgrou
 
     update_status(current_user["id"], video_id, status="transcoding")
     background_tasks.add_task(
-        transcode_and_update, video_id, input_key, output_key, output_format, current_user["id"]
+        transcode_and_update,
+        video_id,
+        input_key,
+        output_key,
+        output_format,
+        current_user["id"],
     )
     return {"message": "Transcoding started", "video_id": video_id}
 
@@ -117,51 +126,69 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
         tmp_out.close()
 
         result = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", input_path],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                input_path,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
         try:
             total_duration = float(result.stdout.strip())
         except ValueError:
-            total_duration = 1  
+            total_duration = 1
 
         if total_duration == 0:
-            total_duration = 1  
+            total_duration = 1
 
         process = subprocess.Popen(
             [
                 "ffmpeg",
-                "-i", input_path,
-                "-c:v", "libx264",
-                "-c:a", "aac",
+                "-i",
+                input_path,
+                "-c:v",
+                "libx264",
+                "-c:a",
+                "aac",
                 "-y",
                 output_path,
-                "-progress", "pipe:1",
-                "-nostats"
+                "-progress",
+                "pipe:1",
+                "-nostats",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            bufsize=1
+            bufsize=1,
         )
 
         update_status_progress(user_id, video_id, status="transcoding", progress=0)
 
-        for line in iter(process.stdout.readline, ''):
+        for line in iter(process.stdout.readline, ""):
             line = line.strip()
             if line.startswith("out_time_ms"):
-                ms_str = line.split('=')[1]
+                ms_str = line.split("=")[1]
                 if ms_str.isdigit():
                     ms = int(ms_str)
                     progress = min(int(ms / (total_duration * 1_000_000) * 100), 100)
-                    update_status_progress(user_id, video_id, status="transcoding", progress=progress)
+                    update_status_progress(
+                        user_id, video_id, status="transcoding", progress=progress
+                    )
 
         process.wait()
 
         if process.returncode == 0 and os.path.exists(output_path):
             s3_client.upload_file(output_path, S3_BUCKET, output_key)
-            update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
+            update_status_progress(
+                user_id, video_id, status="done", progress=100, format=output_format
+            )
         else:
             update_status_progress(user_id, video_id, status="failed", progress=0)
 
@@ -176,39 +203,43 @@ def transcode_and_update(video_id, input_key, output_key, output_format, user_id
             os.remove(output_path)
 
 
-
 async def delete_video(video_id, current_user: dict):
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to modify this video")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to modify this video"
+        )
 
     try:
         s3_client.delete_object(Bucket=S3_BUCKET, Key=video["filepath"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete video: {str(e)}")
 
-    result = remove_video(current_user['role'],current_user["id"], video_id)
+    result = remove_video(current_user["role"], current_user["id"], video_id)
     return {"message": "Video deleted" if result else "Failed to delete video"}
 
 
-
 def download_video(video_id, current_user: dict):
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to download this video")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to download this video"
+        )
 
     try:
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": S3_BUCKET, "Key": video["filepath"]},
-            ExpiresIn=3600 
+            ExpiresIn=3600,
         )
         return {"download_url": presigned_url}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not generate download link: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Could not generate download link: {str(e)}"
+        )

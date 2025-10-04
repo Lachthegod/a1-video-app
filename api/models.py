@@ -1,25 +1,32 @@
 import boto3
 import uuid
-import os
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
-from videoapi.pstore import load_parameters
+from parameter_store import load_parameters
 
 
 parameters = load_parameters()
 
 AWS_REGION = parameters.get("awsregion", "ap-southeast-2")
-TABLE_NAME = parameters.get("s3bucket")
-
+TABLE_NAME = parameters.get("DYNAMODB_TABLE")
 
 
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 table = dynamodb.Table(TABLE_NAME)
 
 
-def create_video(filename, filepath, title=None, description=None, owner=None, user_id=None, status="uploaded", format=None):
+def create_video(
+    filename,
+    filepath,
+    title=None,
+    description=None,
+    owner=None,
+    user_id=None,
+    status="uploaded",
+    format=None,
+):
     video_id = str(uuid.uuid4())
-    created_at = datetime.now(timezone.utc).isoformat() #datetime.utcnow().isoformat()
+    created_at = datetime.now(timezone.utc).isoformat()  # datetime.utcnow().isoformat()
 
     item = {
         "user_id": user_id or "anonymous",
@@ -40,13 +47,13 @@ def create_video(filename, filepath, title=None, description=None, owner=None, u
     except ClientError as e:
         raise Exception(f"Error creating video: {e}")
 
-    
+
 def get_video_by_id(user_role, user_id, video_id):
     try:
         if user_role == "admin":
             resp = table.scan(
                 FilterExpression="video_id = :vid",
-                ExpressionAttributeValues={":vid": video_id}
+                ExpressionAttributeValues={":vid": video_id},
             )
             items = resp.get("Items", [])
             return items[0] if items else None
@@ -65,7 +72,8 @@ def list_videos(user_id):
         return resp.get("Items", [])
     except ClientError as e:
         raise Exception(f"Error listing videos: {e}")
-    
+
+
 def all_videos():
     try:
         resp = table.scan()
@@ -81,12 +89,12 @@ def update_status(user_id, video_id, status):
             UpdateExpression="SET #s = :val",
             ExpressionAttributeNames={"#s": "status"},
             ExpressionAttributeValues={":val": status},
-            ReturnValues="ALL_NEW"
+            ReturnValues="ALL_NEW",
         )
         return resp.get("Attributes")
     except ClientError as e:
         raise Exception(f"Error updating video status: {e}")
-    
+
 
 def update_status_progress(user_id, video_id, status, progress=None, format=None):
 
@@ -110,15 +118,22 @@ def update_status_progress(user_id, video_id, status, progress=None, format=None
             UpdateExpression="SET " + ", ".join(update_expr),
             ExpressionAttributeNames=expr_attr_names,
             ExpressionAttributeValues=expr_attr_vals,
-            ReturnValues="ALL_NEW"
+            ReturnValues="ALL_NEW",
         )
         return resp.get("Attributes")
     except ClientError as e:
         raise Exception(f"Error updating video status/progress: {e}")
 
 
-
-def update_video_metadata(user_role, user_id, video_id, format=None, filename=None, title=None, description=None):
+def update_video_metadata(
+    user_role,
+    user_id,
+    video_id,
+    format=None,
+    filename=None,
+    title=None,
+    description=None,
+):
     update_expr = []
     expr_attr_vals = {}
     expr_attr_names = {}
@@ -152,7 +167,7 @@ def update_video_metadata(user_role, user_id, video_id, format=None, filename=No
             UpdateExpression="SET " + ", ".join(update_expr),
             ExpressionAttributeNames=expr_attr_names,
             ExpressionAttributeValues=expr_attr_vals,
-            ReturnValues="ALL_NEW"
+            ReturnValues="ALL_NEW",
         )
         return resp.get("Attributes")
     except ClientError as e:
@@ -164,17 +179,18 @@ def remove_video(user_role, user_id, video_id):
         if user_role == "admin":
             response = table.scan(
                 FilterExpression="video_id = :vid",
-                ExpressionAttributeValues={":vid": video_id}
+                ExpressionAttributeValues={":vid": video_id},
             )
             items = response.get("Items", [])
             if not items:
                 return False  #  not found
             for item in items:
-                table.delete_item(Key={"user_id": item["user_id"], "video_id": video_id})
+                table.delete_item(
+                    Key={"user_id": item["user_id"], "video_id": video_id}
+                )
             return True
         else:
             table.delete_item(Key={"user_id": user_id, "video_id": video_id})
             return True
     except ClientError as e:
         raise Exception(f"Error deleting video: {e}")
-

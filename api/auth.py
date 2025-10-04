@@ -1,10 +1,8 @@
-
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError
 import requests
-import os
-from videoapi.pstore import load_parameters
+from parameter_store import load_parameters
 
 
 # -----------------------------
@@ -12,18 +10,16 @@ from videoapi.pstore import load_parameters
 # -----------------------------
 
 security = HTTPBearer()
-
 parameters = load_parameters()
 
-COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
-COGNITO_USERPOOL_ID = parameters.get("cognitouserpoolid")
-COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
+AWS_REGION = "ap-southeast-2"
+COGNITO_USER_POOL_ID = parameters.get("COGNITO_USER_POOL_ID")
+COGNITO_CLIENT_ID = parameters.get("COGNITO_CLIENT_ID")
 
-JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}/.well-known/jwks.json"
-ISSUER = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USERPOOL_ID}"
+JWKS_URL = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
+ISSUER = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}"
 
 jwks = requests.get(JWKS_URL).json()
-
 
 
 def verify_token(token: str):
@@ -60,5 +56,3 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         "id": sub,
         "role": groups[0] if groups else "user",
     }
-
-

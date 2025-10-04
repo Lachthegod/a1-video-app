@@ -1,18 +1,17 @@
 import asyncio
 from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, Body
 from fastapi.responses import StreamingResponse
-from videoapi.auth import get_current_user
-from videoapi.models import get_video_by_id, update_video_metadata
-import os
+from api.auth import get_current_user
+from api.models import get_video_by_id, update_video_metadata
 import json
 import boto3
-from videoapi.controllers import (
+from api.controllers import (
     get_all_videos,
     upload_video,
     transcode_video,
-    delete_video
+    delete_video,
 )
-from videoapi.pstore import load_parameters
+from parameter_store import load_parameters
 
 router = APIRouter()
 
@@ -37,7 +36,9 @@ async def list_videos(
     owner: str | None = None,
     search: str | None = None,
 ):
-    videos = get_all_videos(user_id=None if current_user["role"]=="admin" else current_user["id"]) 
+    videos = get_all_videos(
+        user_id=None if current_user["role"] == "admin" else current_user["id"]
+    )
 
     if current_user["role"] != "admin":
         videos = [v for v in videos if v["owner"] == current_user["username"]]
@@ -55,7 +56,7 @@ async def list_videos(
     if videos:
         videos.sort(
             key=lambda v: v.get(sort_by) or "",  # fallback so None won't break sorting
-            reverse=(order == "desc")
+            reverse=(order == "desc"),
         )
 
     return {
@@ -66,11 +67,12 @@ async def list_videos(
     }
 
 
-
 @router.get("/{video_id}")
-async def get_video_route(video_id: str, current_user: dict = Depends(get_current_user)):
- 
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+async def get_video_route(
+    video_id: str, current_user: dict = Depends(get_current_user)
+):
+
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
@@ -80,60 +82,76 @@ async def get_video_route(video_id: str, current_user: dict = Depends(get_curren
 
 @router.post("/")
 async def upload_video_route(
-    request: Request,
-    current_user: dict = Depends(get_current_user)
+    request: Request, current_user: dict = Depends(get_current_user)
 ):
     return await upload_video(request, current_user)
 
 
-
 @router.post("/{video_id}/transcode")
-async def transcode_endpoint(video_id: str,request: Request,background_tasks: BackgroundTasks,current_user: dict = Depends(get_current_user)):
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+async def transcode_endpoint(
+    video_id: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+):
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to transcode this video")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to transcode this video"
+        )
     return await transcode_video(video_id, request, background_tasks, current_user)
 
 
 @router.delete("/{video_id}")
-async def delete_video_route(video_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_video_route(
+    video_id: str, current_user: dict = Depends(get_current_user)
+):
     return await delete_video(video_id, current_user)
 
 
 @router.get("/{video_id}/download")
 async def download_video(video_id: str, current_user: dict = Depends(get_current_user)):
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
+
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to download this video")
-    
-    #S3 presigned URL
+        raise HTTPException(
+            status_code=403, detail="Not authorized to download this video"
+        )
+
+    # S3 presigned URL
     try:
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": S3_BUCKET, "Key": video["filepath"]}, 
-            ExpiresIn=3600
+            Params={"Bucket": S3_BUCKET, "Key": video["filepath"]},
+            ExpiresIn=3600,
         )
         return {"download_url": presigned_url}
     except Exception:
         raise HTTPException(status_code=500, detail="Could not generate download link")
 
 
-
 @router.put("/{video_id}")
-async def update_video_route(video_id: str, metadata: dict = Body(...), current_user: dict = Depends(get_current_user)):
-    video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+async def update_video_route(
+    video_id: str,
+    metadata: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    video = get_video_by_id(current_user["role"], current_user["id"], video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
 
     if video["owner"] != current_user["username"] and current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to update this video")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this video"
+        )
 
-    updated_video = update_video_metadata(current_user['role'],current_user["id"],video_id, metadata)
+    updated_video = update_video_metadata(
+        current_user["role"], current_user["id"], video_id, metadata
+    )
     if not updated_video:
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
@@ -141,16 +159,20 @@ async def update_video_route(video_id: str, metadata: dict = Body(...), current_
 
 
 @router.get("/{video_id}/progress/stream")
-async def stream_progress(video_id: str, current_user: dict = Depends(get_current_user)):
+async def stream_progress(
+    video_id: str, current_user: dict = Depends(get_current_user)
+):
     async def event_generator():
         try:
             while True:
-                video = get_video_by_id(current_user['role'], current_user['id'], video_id)
+                video = get_video_by_id(
+                    current_user["role"], current_user["id"], video_id
+                )
                 if video:
                     yield f"data: {json.dumps(video)}\n\n"
-                await asyncio.sleep(2)  #Stream updates 2s
+                await asyncio.sleep(2)  # Stream updates 2s
         except asyncio.CancelledError:
-           
+
             print(f"Client disconnected from video {video_id} progress stream")
             return
 

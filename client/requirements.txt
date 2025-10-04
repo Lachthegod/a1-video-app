@@ -1,0 +1,5 @@
+fastapi
+httpx
+PyJWT
+python-jose[cryptography]==3.3.0
+boto3

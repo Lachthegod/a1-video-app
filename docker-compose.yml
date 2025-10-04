@@ -1,18 +1,11 @@
+name: mirelle
+
 services:
-  video-api:
-    build: .
+  api:
+    build: 
+     context: .
+     dockerfile: api.Dockerfile
+    image: ${ECR_REPO_URL}:latest
     ports:
-      - "3000:3000"
-    environment:
-      - AWS_REGION=ap-southeast-2
-      - DYNAMODB_TABLE=n11715910-a2
-
-
-  video-client:
-    build:
-      context: ./videocli
-      dockerfile: ../Dockerfile.client
-    ports:
-      - "3001:3001"
-    depends_on:
-      - video-api
+      - "80:3000"
+    command: ["python3", "-m", "uvicorn", "api:app"]

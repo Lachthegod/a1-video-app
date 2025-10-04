@@ -2,11 +2,9 @@ import boto3
 import hmac
 import hashlib
 import base64
-import os
 import json
 from botocore.exceptions import ClientError
-from videoapi.pstore import load_parameters
-
+from parameter_store import load_parameters
 
 
 parameters = load_parameters()
@@ -25,7 +23,7 @@ def get_secret_hash(username: str) -> str:
     dig = hmac.new(
         get_secret().encode("utf-8"),
         msg=message.encode("utf-8"),
-        digestmod=hashlib.sha256
+        digestmod=hashlib.sha256,
     ).digest()
     return base64.b64encode(dig).decode()
 
@@ -93,11 +91,10 @@ def authenticate_user(username: str, password: str) -> dict:
     except ClientError as e:
         raise Exception(e.response["Error"]["Message"])
 
-    
 
-    
-
-def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: str) -> dict:
+def respond_to_mfa_challenge(
+    username: str, session: str, code: str, challenge: str
+) -> dict:
     params = {
         "ClientId": COGNITO_CLIENT_ID,
         "ChallengeName": challenge,
@@ -114,7 +111,6 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
     elif challenge == "EMAIL_OTP":
         params["ChallengeResponses"]["EMAIL_OTP_CODE"] = code
 
-
     secret_hash = get_secret_hash(username)
     if secret_hash:
         params["ChallengeResponses"]["SECRET_HASH"] = secret_hash
@@ -123,7 +119,7 @@ def respond_to_mfa_challenge(username: str, session: str, code: str, challenge: 
     return response["AuthenticationResult"]
 
 
-def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
+def get_secret(secret_name, region_name="ap-southeast-2"):
 
     client = boto3.client(service_name="secretsmanager", region_name=region_name)
 
@@ -138,7 +134,9 @@ def get_secret(secret_name="n11715910-cognito", region_name="ap-southeast-2"):
         secret_dict = json.loads(secret_str)
         client_secret = secret_dict.get("client_secret")
         if not client_secret:
-            raise RuntimeError(f"Secret {secret_name} does not contain 'client_secret' key")
+            raise RuntimeError(
+                f"Secret {secret_name} does not contain 'client_secret' key"
+            )
     except json.JSONDecodeError as e:
         raise RuntimeError(f"Secret {secret_name} is not valid JSON: {e}")
 
