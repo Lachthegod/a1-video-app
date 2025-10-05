@@ -673,3 +673,11 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
 
 # Temporary server-side session for Google login to bypass cross-site cookie issues.
 # Tokens are stored briefly and set as cookies on a redirect to the frontend, then cleared.
+
+# -----------------------------
+# Health check for target group
+# -----------------------------
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
