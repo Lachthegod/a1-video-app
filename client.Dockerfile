@@ -9,4 +9,4 @@ COPY client client
 RUN pip install --no-cache-dir -r client/requirements.txt
 
 COPY parameter_store.py parameter_store.py
-CMD ["python3", "-m", "uvicorn", "client:app", "--host=0.0.0.0", "--port=3001"]
+CMD ["python3", "-m", "uvicorn", "client.main:app", "--host", "0.0.0.0", "--port", "3001"]
