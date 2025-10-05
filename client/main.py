@@ -1,4 +1,3 @@
-######################################
 from fastapi import FastAPI, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -6,10 +5,9 @@ import uuid
 import httpx
 from jose import jwt, jwk, JWTError
 import logging
-import boto3
-from botocore.exceptions import ClientError
 import json
 
+from secrets_manager import get_secret
 from parameter_store import load_parameters
 
 parameters = load_parameters()
@@ -34,7 +32,7 @@ GOOGLE_LOGIN_URL = (
     f"&redirect_uri={REDIRECT_URI}"
     f"&identity_provider=Google"
     f"&scope=email+openid+profile"
-    f"&state={{\"provider\":\"Google\"}}"
+    f'&state={{"provider":"Google"}}'
 )
 
 
@@ -122,33 +120,6 @@ async def decode_jwt(id_token: str, access_token: str = None):
     except Exception as e:
         logging.error(f"Unexpected error in decode_jwt: {e}", exc_info=True)
         return None, None
-
-
-# -----------------------------
-# Helper to get Cognito client secret from Secrets Manager
-# -----------------------------
-def get_secret(secret_name, region_name=COGNITO_REGION):
-
-    client = boto3.client(service_name="secretsmanager", region_name=region_name)
-
-    try:
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-    except ClientError as e:
-        raise RuntimeError(f"Error retrieving secret {secret_name}: {e}")
-
-    secret_str = get_secret_value_response.get("SecretString")
-
-    try:
-        secret_dict = json.loads(secret_str)
-        client_secret = secret_dict.get("client_secret")
-        if not client_secret:
-            raise RuntimeError(
-                f"Secret {secret_name} does not contain 'client_secret' key"
-            )
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"Secret {secret_name} is not valid JSON: {e}")
-
-    return client_secret
 
 
 # -----------------------------
@@ -629,7 +600,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     data = {
         "grant_type": "authorization_code",
         "client_id": COGNITO_CLIENT_ID,
-        "client_secret": get_secret(),
+        "client_secret": get_secret("COGNITO_CLIENT_SECRET"),
         "code": code,
         "redirect_uri": REDIRECT_URI,
     }
@@ -677,6 +648,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
 # -----------------------------
 # Health check for target group
 # -----------------------------
+
 
 @app.get("/health")
 async def health_check():

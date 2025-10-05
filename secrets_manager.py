@@ -4,6 +4,8 @@ from botocore.exceptions import ClientError
 
 
 def get_secret(secret_name):
+    secret_name = "mirelle/" + secret_name
+    
     client = boto3.client(service_name="secretsmanager", region_name="ap-southeast-2")
 
     try:
