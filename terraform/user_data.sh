@@ -21,11 +21,24 @@ run_container() {
   docker rm -f api
   docker rm -f client
 
+  # Get AWS credentials from EC2 instance metadata
+  TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
+  ROLE_NAME=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/iam/security-credentials/ 2>/dev/null)
+  CREDENTIALS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/iam/security-credentials/$ROLE_NAME 2>/dev/null)
+  
+  AWS_ACCESS_KEY_ID=$(echo $CREDENTIALS | grep -o '"AccessKeyId" : "[^"]*' | cut -d'"' -f4)
+  AWS_SECRET_ACCESS_KEY=$(echo $CREDENTIALS | grep -o '"SecretAccessKey" : "[^"]*' | cut -d'"' -f4)
+  AWS_SESSION_TOKEN=$(echo $CREDENTIALS | grep -o '"Token" : "[^"]*' | cut -d'"' -f4)
+
   docker run -d \
     --name api \
     --restart always \
     --network app-network \
     -p 3000:3000 \
+    -e AWS_REGION=${aws_region} \
+    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+    -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
     ${api_ecr_repo_url}:latest
   
   docker run -d \
@@ -33,6 +46,10 @@ run_container() {
     --restart always \
     --network app-network \
     -p 80:3001 \
+    -e AWS_REGION=${aws_region} \
+    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+    -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
     ${client_ecr_repo_url}:latest
 }
 
