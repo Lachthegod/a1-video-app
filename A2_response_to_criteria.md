@@ -159,8 +159,8 @@ i-068a76896623a5f46
 
 ### Infrastructure as code
 
-- **Technology used:** CloudFormation 
-- **Services deployed:** S3, DynamoDB, Cognito 
+- **Technology used:** Terraform
+- **Services deployed:** S3, DynamoDB, Cognito, Parameter Store, Secrets Manager, Route53
 - **Video timestamp:** -
 - **Relevant files:**
     - launch_a2_AWS.yaml
