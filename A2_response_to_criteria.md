@@ -163,7 +163,7 @@ i-068a76896623a5f46
 - **Services deployed:** S3, DynamoDB, Cognito, Parameter Store, Secrets Manager, Route53
 - **Video timestamp:** -
 - **Relevant files:**
-    - launch_a2_AWS.yaml
+    - /terraform
 
 ### Other (with prior approval only)
 
