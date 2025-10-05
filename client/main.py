@@ -28,7 +28,7 @@ COGNITO_USER_POOL_DOMAIN = parameters.get("COGNITO_USER_POOL_DOMAIN")
 JWKS_URL = f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
 TEMP_SESSIONS = {}
 GOOGLE_LOGIN_URL = (
-    f"https://{COGNITO_USER_POOL_DOMAIN}.auth.{COGNITO_REGION}.amazoncognito.com/oAuth2/authorize"
+    f"https://{COGNITO_USER_POOL_DOMAIN}.auth.{COGNITO_REGION}.amazoncognito.com/oauth2/authorize"
     f"?response_type=code"
     f"&client_id={COGNITO_CLIENT_ID}"
     f"&redirect_uri={REDIRECT_URI}"

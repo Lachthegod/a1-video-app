@@ -22,7 +22,7 @@ resource "aws_api_gateway_integration" "callback" {
   http_method             = aws_api_gateway_method.callback.http_method
   integration_http_method = "ANY"
   type                    = "HTTP_PROXY"
-  uri                     = "https://${var.domain}/callback"
+  uri                     = "https://${var.domain}/auth/callback"
 }
 
 resource "aws_api_gateway_deployment" "main" {

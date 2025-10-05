@@ -2,10 +2,9 @@ import boto3
 import hmac
 import hashlib
 import base64
-import json
 from botocore.exceptions import ClientError
 from parameter_store import load_parameters
-
+from secrets_manager import get_secret
 
 parameters = load_parameters()
 
@@ -17,11 +16,11 @@ client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
 
 
 def get_secret_hash(username: str) -> str:
-    if not get_secret():
+    if not get_secret("COGNITO_CLIENT_SECRET"):
         return None
     message = username + COGNITO_CLIENT_ID
     dig = hmac.new(
-        get_secret().encode("utf-8"),
+        get_secret("COGNITO_CLIENT_SECRET").encode("utf-8"),
         msg=message.encode("utf-8"),
         digestmod=hashlib.sha256,
     ).digest()
@@ -117,27 +116,3 @@ def respond_to_mfa_challenge(
 
     response = client.respond_to_auth_challenge(**params)
     return response["AuthenticationResult"]
-
-
-def get_secret(secret_name, region_name="ap-southeast-2"):
-
-    client = boto3.client(service_name="secretsmanager", region_name=region_name)
-
-    try:
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-    except ClientError as e:
-        raise RuntimeError(f"Error retrieving secret {secret_name}: {e}")
-
-    secret_str = get_secret_value_response.get("SecretString")
-
-    try:
-        secret_dict = json.loads(secret_str)
-        client_secret = secret_dict.get("client_secret")
-        if not client_secret:
-            raise RuntimeError(
-                f"Secret {secret_name} does not contain 'client_secret' key"
-            )
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"Secret {secret_name} is not valid JSON: {e}")
-
-    return client_secret

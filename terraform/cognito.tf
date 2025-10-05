@@ -48,7 +48,7 @@ resource "aws_cognito_user_pool_client" "client" {
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
 
   supported_identity_providers = ["COGNITO", "Google"]
-  callback_urls                = ["https://mirelle.cab432.com/callback", "http://localhost:3001/callback"]
+  callback_urls                = ["https://mirelle.cab432.com/auth/callback", "http://localhost:3001/auth/callback"]
 }
 
 resource "aws_cognito_user_pool_domain" "domain" {
