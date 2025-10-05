@@ -43,8 +43,8 @@ app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 
 
-templates = Jinja2Templates(directory="templates")
-API_BASE = "http://video-api:3000"
+templates = Jinja2Templates(directory="client/templates")
+API_BASE = "http://api:3000"
 # -----------------------------
 # Async JWKS fetch
 # -----------------------------

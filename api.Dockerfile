@@ -5,7 +5,8 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY . .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY api api
+RUN pip install --no-cache-dir -r api/requirements.txt
 
-CMD ["python3", "-m", "uvicorn", "api:app"]
+COPY parameter_store.py parameter_store.py
+CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3000"]

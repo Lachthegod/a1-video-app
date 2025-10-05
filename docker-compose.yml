@@ -5,7 +5,24 @@ services:
     build: 
      context: .
      dockerfile: api.Dockerfile
-    image: ${ECR_REPO_URL}:latest
+    image: ${API_ECR_REPO_URL}:latest
     ports:
-      - "80:3000"
-    command: ["python3", "-m", "uvicorn", "api:app"]
+      - "3000:3000"
+    command: ["python3", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3000"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+
+  client:
+    build: 
+     context: .
+     dockerfile: client.Dockerfile
+    image: ${CLIENT_ECR_REPO_URL}:latest
+    ports:
+      - "3001:3001"
+    command: ["python3", "-m", "uvicorn", "client.main:app", "--host", "0.0.0.0", "--port", "3001"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}

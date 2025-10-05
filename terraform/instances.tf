@@ -33,8 +33,22 @@ resource "aws_instance" "app" {
   }
 }
 
-resource "aws_ecr_repository" "app" {
-  name                 = "mirelle-assessment/app"
+resource "aws_ecr_repository" "api" {
+  name                 = "${var.project_prefix}/api"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  lifecycle {
+    ignore_changes = [tags, tags_all]
+  }
+}
+
+resource "aws_ecr_repository" "client" {
+  name                 = "${var.project_prefix}/client"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -59,14 +73,16 @@ data "cloudinit_config" "userdata" {
   part {
     content_type = "text/x-shellscript"
     content = templatefile("${path.module}/user_data.sh", {
-      aws_region     = var.aws_region
-      ecr_repo_url   = aws_ecr_repository.app.repository_url
-      port_host      = "3001"
-      port_container = "3001"
+      aws_region          = var.aws_region
+      api_ecr_repo_url    = aws_ecr_repository.api.repository_url
+      client_ecr_repo_url = aws_ecr_repository.client.repository_url
     })
   }
 }
 
-output "ecr_repo_url" {
-  value = aws_ecr_repository.app.repository_url
+output "api_ecr_repo_url" {
+  value = aws_ecr_repository.api.repository_url
+}
+output "client_ecr_repo_url" {
+  value = aws_ecr_repository.client.repository_url
 }

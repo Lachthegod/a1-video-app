@@ -43,3 +43,10 @@ resource "aws_ssm_parameter" "cognito_user_pool_domain" {
   type  = "String"
   value = aws_cognito_user_pool_domain.domain.domain
 }
+
+# Redirect URI for OAuth/Cognito callbacks
+resource "aws_ssm_parameter" "redirect_uri" {
+  name  = "/${var.project_prefix}/REDIRECT_URI"
+  type  = "String"
+  value = "https://${var.domain}/auth/callback"
+}

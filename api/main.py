@@ -17,4 +17,4 @@ app.include_router(api_router, prefix="/videos")
 app.include_router(routes_auth.router, prefix="/auth")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=80)
+    uvicorn.run(app, host="0.0.0.0", port=3000)
