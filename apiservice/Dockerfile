@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY a1-video-app/apiservice/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY a1-video-app/apiservice ./apiservice
+COPY apiservice ./apiservice
 
 EXPOSE 3000
 
