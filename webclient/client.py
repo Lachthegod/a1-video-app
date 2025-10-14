@@ -160,7 +160,7 @@ async def login_page(request: Request):
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     async with httpx.AsyncClient() as client:
-        resp = await client.post(f"{API_BASE}/auth/login", json={"username": username, "password": password})
+        resp = await client.post(f"{API_BASE_AUTH}/auth/login", json={"username": username, "password": password})
         if resp.status_code != 200:
             return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
         data = resp.json()
@@ -467,7 +467,7 @@ async def signup_page(request: Request):
 async def signup(request: Request, username: str = Form(...), password: str = Form(...), email: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            f"{API_BASE}/auth/signup",
+            f"{API_BASE_AUTH}/auth/signup",
             json={"username": username, "password": password, "email": email}
         )
 
@@ -487,7 +487,7 @@ async def confirm_page(request: Request):
 async def confirm(request: Request, username: str = Form(...), code: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            f"{API_BASE}/auth/confirm",
+            f"{API_BASE_AUTH}/auth/confirm",
             json={"username": username, "code": code}
         )
 
@@ -543,7 +543,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            f"{API_BASE}/auth/mfa",
+            f"{API_BASE_AUTH}/auth/mfa",
             json={"username": username, "session": session_token, "code": code, "challenge": challenge},
         )
 
