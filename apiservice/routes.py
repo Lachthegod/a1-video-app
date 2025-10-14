@@ -1,18 +1,18 @@
 import asyncio
 from fastapi import APIRouter, Request, BackgroundTasks, Depends, HTTPException, Body
 from fastapi.responses import StreamingResponse
-from apiservice.auth import get_current_user
-from apiservice.models import get_video_by_id, update_video_metadata
+from auth import get_current_user
+from models import get_video_by_id, update_video_metadata
 import os
 import json
 import boto3
-from apiservice.controllers import (
+from controllers import (
     get_all_videos,
     upload_video,
     transcode_video,
     delete_video
 )
-from apiservice.pstore import load_parameters
+from pstore import load_parameters
 
 router = APIRouter()
 

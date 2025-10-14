@@ -3,7 +3,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError
 import requests
-from apiservice.pstore import load_parameters
+from pstore import load_parameters
 
 
 # -----------------------------

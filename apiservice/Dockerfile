@@ -5,10 +5,10 @@ RUN apt-get update \
 
 WORKDIR /usr/src/app
 
-COPY a1-video-app/apiservice/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY apiservice ./apiservice
+COPY . ./
 
 EXPOSE 3000
 

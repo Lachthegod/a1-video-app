@@ -3,7 +3,7 @@ import uuid
 import os
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
-from apiservice.pstore import load_parameters
+from pstore import load_parameters
 
 
 parameters = load_parameters()

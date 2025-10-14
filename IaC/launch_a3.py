@@ -37,6 +37,7 @@ sudo usermod -aG docker ubuntu
 # Clone your repo
 cd /home/ubuntu
 git clone https://github.com/Lachthegod/a1-video-app.git
+sudo chown -R ubuntu:ubuntu /home/ubuntu/a1-video-app
 cd a1-video-app/apiservice
 
 # Run docker compose
