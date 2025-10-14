@@ -3,8 +3,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError
 import requests
-import os
-from videoapi.pstore import load_parameters
+from apiservice.pstore import load_parameters
 
 
 # -----------------------------

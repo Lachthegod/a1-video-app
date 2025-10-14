@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from videoapi.models import (
+from apiservice.models import (
     create_video, get_video_by_id, list_videos, update_status, remove_video, all_videos, update_status_progress
 )
 import subprocess
@@ -12,7 +12,7 @@ import os
 import uuid
 import boto3
 
-from videoapi.pstore import load_parameters
+from apiservice.pstore import load_parameters
 
 
 router = APIRouter()
