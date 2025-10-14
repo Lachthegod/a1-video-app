@@ -32,11 +32,12 @@ cd a1-video-app
 
 # Build and run microservice
 sudo docker build -f {dockerfile_path} -t {container_name} .
+sudo docker run -d --name {container_name} -p {port}:{port} {container_name}
 """
 
 # Define the microservices
 microservices = [
-    {"name": "apiservice", "dockerfile": "a1-video-app/apiservice/Dockerfile"},
+    {"name": "apiservice", "dockerfile": "a1-video-app/apiservice/Dockerfile", "port": "3000"},
     # {"name": "webclient", "dockerfile": "a1-video-app/webclient/Dockerfile"},
     # {"name": "loginservice", "dockerfile": "a1-video-app/loginservice/Dockerfile"},
     # {"name": "videoworker", "dockerfile": "videoworker/Dockerfile"},
@@ -47,6 +48,7 @@ for svc in microservices:
     user_data = USER_DATA_TEMPLATE.format(
         dockerfile_path=svc["dockerfile"],
         container_name=svc["name"],
+        port=svc["port"],
     )
 
     response = ec2.run_instances(
