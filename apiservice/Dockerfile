@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 RUN apt-get update \
-    && apt-get -yy install libmariadb3 libmariadb-dev gcc ffmpeg
+    && apt-get -yy install gcc ffmpeg
 
 WORKDIR /usr/src/app
 

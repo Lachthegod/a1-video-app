@@ -3,9 +3,6 @@ from fastapi import FastAPI
 from videoapi.routes import router as api_router
 from videoapi import routes_auth  
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 app = FastAPI(
     title="Video Stream API",
     description="API for streaming services",
