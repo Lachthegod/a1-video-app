@@ -4,7 +4,7 @@ import hashlib
 import base64
 import json
 from botocore.exceptions import ClientError
-from loginservice.pstore import load_parameters
+from pstore import load_parameters
 
 
 
