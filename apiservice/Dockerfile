@@ -5,10 +5,10 @@ RUN apt-get update \
 
 WORKDIR /usr/src/app
 
-COPY requirements.txt ./
+COPY apiservice/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY apiservice /usr/src/app
 
 EXPOSE 3000
 
