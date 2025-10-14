@@ -1,0 +1,8 @@
+services:
+  video-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - AWS_REGION=ap-southeast-2
+      - DYNAMODB_TABLE=n11715910-a2

@@ -4,18 +4,27 @@ import base64
 ec2 = boto3.client("ec2", region_name="ap-southeast-2")
 
 # Template user_data with placeholders for dockerfile path and container name
-USER_DATA_TEMPLATE = """#!/bin/bash
+
+user_data_script = """#!/bin/bash
 # Update system packages
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
 # Install dependencies
-sudo apt-get install -y ca-certificates curl gnupg lsb-release git
+sudo apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    git
 
-# Install Docker
+# Install Docker (official repo for latest version)
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt-get update -y
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -25,14 +34,13 @@ sudo systemctl enable docker
 sudo systemctl start docker
 sudo usermod -aG docker ubuntu
 
-# Clone repo
+# Clone your repo
 cd /home/ubuntu
 git clone https://github.com/Lachthegod/a1-video-app.git
-cd a1-video-app
+cd a1-video-app/apiservice
 
-# Build and run microservice
-sudo docker build -f {dockerfile_path} -t {container_name} .
-sudo docker run -d --name {container_name} -p {port}:{port} {container_name}
+# Run docker compose
+sudo docker compose up -d --build
 """
 
 # Define the microservices
@@ -45,7 +53,7 @@ microservices = [
 
 # Launch each EC2 instance
 for svc in microservices:
-    user_data = USER_DATA_TEMPLATE.format(
+    user_data = user_data_script.format(
         dockerfile_path=svc["dockerfile"],
         container_name=svc["name"],
         port=svc["port"],
