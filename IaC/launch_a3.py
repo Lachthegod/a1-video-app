@@ -37,8 +37,8 @@ sudo docker build -f {dockerfile_path} -t {container_name} .
 # Define the microservices
 microservices = [
     {"name": "apiservice", "dockerfile": "a1-video-app/apiservice/Dockerfile"},
-    {"name": "webclient", "dockerfile": "a1-video-app/webclient/Dockerfile"},
-    {"name": "loginservice", "dockerfile": "a1-video-app/loginservice/Dockerfile"},
+    # {"name": "webclient", "dockerfile": "a1-video-app/webclient/Dockerfile"},
+    # {"name": "loginservice", "dockerfile": "a1-video-app/loginservice/Dockerfile"},
     # {"name": "videoworker", "dockerfile": "videoworker/Dockerfile"},
 ]
 
