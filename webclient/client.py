@@ -45,6 +45,7 @@ GOOGLE_LOGIN_URL = (
 # FastAPI setup
 # -----------------------------
 app = FastAPI()
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -151,13 +152,13 @@ def get_secret(secret_name="n11715910-cognito", region_name=COGNITO_REGION):
 # -----------------------------
 # Routes
 # -----------------------------
-@app.get("web/", response_class=HTMLResponse)
+@app.get("/web/", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "google_login_url": GOOGLE_LOGIN_URL})
 
 
 
-@app.post("web/login")
+@app.post("/web/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(f"{API_BASE_AUTH}/auth/login", json={"username": username, "password": password})
@@ -171,27 +172,27 @@ async def login(request: Request, username: str = Form(...), password: str = For
                 "session": data["session"],
                 "challenge": data["challenge"]
             }
-            response = RedirectResponse("web/mfa", status_code=303)
+            response = RedirectResponse("/web/mfa", status_code=303)
             response.set_cookie(
                 key="mfa_token",
                 value=json.dumps(mfa_payload),
                 httponly=True,
                 secure=False,
                 samesite="lax",
-                path="web/",
+                path="/web/",
                 domain=API_DOMAIN,
             )
             return response
 
         token = data["IdToken"]
-        response = RedirectResponse("web/dashboard", status_code=303)
+        response = RedirectResponse("/web/dashboard", status_code=303)
         response.set_cookie(
             key="session_token",
             value=token,
             httponly=True,
             secure=False, 
             samesite="lax",
-            path="web/",
+            path="/web/",
             domain=API_DOMAIN,
         )
         response.set_cookie(
@@ -200,7 +201,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             httponly=True,
             secure=False, 
             samesite="lax",
-            path="web/",
+            path="/web/",
             domain=API_DOMAIN,
         )
         return response
@@ -210,7 +211,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 # Dashboard
 # -----------------------------
 
-@app.get("web/dashboard", response_class=HTMLResponse)
+@app.get("/web/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     logging.info(f"=== /dashboard endpoint hit ===")
 
@@ -220,7 +221,7 @@ async def dashboard(request: Request):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -231,7 +232,7 @@ async def dashboard(request: Request):
     username, role = await decode_jwt(id_token, access_token)
     if not username:
         logging.warning(f"Failed to decode JWT from cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     logging.info(f"Decoded JWT → username={username}, role={role}")
 
@@ -306,29 +307,29 @@ async def dashboard(request: Request):
 # Dashboard via temp session_id 
 # -----------------------------
 
-@app.get("web/dashboard/{session_id}")
+@app.get("/web/dashboard/{session_id}")
 async def dashboard_session(session_id: str):
     tokens = TEMP_SESSIONS.pop(session_id, None)
     if not tokens:
         raise HTTPException(400, "Session expired")
 
-    response = RedirectResponse("web/dashboard")
-    response.set_cookie("session_token", tokens["IdToken"], httponly=True, path="web/")
-    response.set_cookie("access_token", tokens["AccessToken"], httponly=True, path="web/")
+    response = RedirectResponse("/web/dashboard")
+    response.set_cookie("session_token", tokens["IdToken"], httponly=True, path="/web/")
+    response.set_cookie("access_token", tokens["AccessToken"], httponly=True, path="/web/")
     return response
 
 # -----------------------------
 # Upload video
 # -----------------------------
 
-@app.post("web/upload")
+@app.post("/web/upload")
 async def upload(request: Request, filename: str = Form(...), content_type: str = Form(...)):
     id_token = request.cookies.get("session_token")
     access_token = request.cookies.get("access_token")
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
     
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -358,7 +359,7 @@ async def upload(request: Request, filename: str = Form(...), content_type: str 
 # -----------------------------
 # Delete video
 # -----------------------------
-@app.post("web/delete/{video_id}")
+@app.post("/web/delete/{video_id}")
 async def delete(request: Request, video_id: str):
 
     id_token = request.cookies.get("session_token")
@@ -366,7 +367,7 @@ async def delete(request: Request, video_id: str):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -376,13 +377,13 @@ async def delete(request: Request, video_id: str):
     async with httpx.AsyncClient() as client:
         await client.delete(f"{API_BASE}/videos/{video_id}", headers=headers)
 
-    return RedirectResponse(f"web/dashboard", status_code=303)
+    return RedirectResponse(f"/web/dashboard", status_code=303)
 
 
 # -----------------------------
 # Transcode video
 # -----------------------------
-@app.post("web/transcode/{video_id}/{fmt}")
+@app.post("/web/transcode/{video_id}/{fmt}")
 async def transcode(request: Request, video_id: str, fmt: str):
 
     id_token = request.cookies.get("session_token")
@@ -390,7 +391,7 @@ async def transcode(request: Request, video_id: str, fmt: str):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies using IdToken as fallback")
@@ -405,13 +406,13 @@ async def transcode(request: Request, video_id: str, fmt: str):
             headers=headers,
         )
 
-    return RedirectResponse(f"web/dashboard", status_code=303)
+    return RedirectResponse(f"/web/dashboard", status_code=303)
 
 
 # -----------------------------
 # Update metadata
 # -----------------------------
-@app.post("web/update_metadata/{video_id}")
+@app.post("/web/update_metadata/{video_id}")
 async def update_metadata(
     request: Request,
     video_id: str,
@@ -423,7 +424,7 @@ async def update_metadata(
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies using IdToken as fallback")
@@ -435,22 +436,22 @@ async def update_metadata(
     if description:
         payload["description"] = description
     if not payload:
-        return RedirectResponse(f"web/dashboard", status_code=303)
+        return RedirectResponse(f"/web/dashboard", status_code=303)
 
     headers = {"Authorization": f"Bearer {access_token}"}
     timeout = httpx.Timeout(60.0, connect=30.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         await client.put(f"{API_BASE}/videos/{video_id}", json=payload, headers=headers)
 
-    return RedirectResponse(f"web/dashboard", status_code=303)
+    return RedirectResponse(f"/web/dashboard", status_code=303)
 
 
 # -----------------------------
 # Logout
 # -----------------------------
-@app.get("web/logout")
+@app.get("/web/logout")
 async def logout():
-    response = RedirectResponse("web/", status_code=303)
+    response = RedirectResponse("/web/", status_code=303)
     response.delete_cookie(key="session_token")
     response.delete_cookie(key="access_token")
     return response
@@ -459,11 +460,11 @@ async def logout():
 # -----------------------------
 # Signup
 # -----------------------------
-@app.get("web/signup", response_class=HTMLResponse)
+@app.get("/web/signup", response_class=HTMLResponse)
 async def signup_page(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
 
-@app.post("web/signup")
+@app.post("/web/signup")
 async def signup(request: Request, username: str = Form(...), password: str = Form(...), email: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -473,17 +474,17 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
 
     if resp.status_code != 200:
         return templates.TemplateResponse("signup.html", {"request": request, "error": resp.text})
-    return RedirectResponse("web/confirm", status_code=303)
+    return RedirectResponse("/web/confirm", status_code=303)
 
 
 # -----------------------------
 # Confirm account
 # -----------------------------
-@app.get("web/confirm", response_class=HTMLResponse)
+@app.get("/web/confirm", response_class=HTMLResponse)
 async def confirm_page(request: Request):
     return templates.TemplateResponse("confirm.html", {"request": request})
 
-@app.post("web/confirm")
+@app.post("/web/confirm")
 async def confirm(request: Request, username: str = Form(...), code: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -493,17 +494,17 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
 
     if resp.status_code != 200:
         return templates.TemplateResponse("confirm.html", {"request": request, "error": await resp.text()})
-    return RedirectResponse("web/", status_code=303)
+    return RedirectResponse("/web/", status_code=303)
 
 
-@app.get("web/download/{video_id}")
+@app.get("/web/download/{video_id}")
 async def download(request: Request, video_id: str):
     id_token = request.cookies.get("session_token")
     access_token = request.cookies.get("access_token")
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -513,29 +514,29 @@ async def download(request: Request, video_id: str):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{API_BASE}/videos/{video_id}/download", headers=headers)
         if resp.status_code != 200:
-            return RedirectResponse(f"web/dashboard", status_code=303)
+            return RedirectResponse(f"/web/dashboard", status_code=303)
         data = resp.json()
         download_url = data.get("download_url")
         if not download_url:
-            return RedirectResponse(f"web/dashboard", status_code=303)
+            return RedirectResponse(f"/web/dashboard", status_code=303)
 
         return RedirectResponse(download_url)
 
 # --- MFA routes ---
-@app.get("web/mfa", response_class=HTMLResponse)
+@app.get("/web/mfa", response_class=HTMLResponse)
 async def mfa_page(request: Request):
     return templates.TemplateResponse("mfa.html", {"request": request})
 
-@app.post("web/mfa")
+@app.post("/web/mfa")
 async def mfa_submit(request: Request, code: str = Form(...)):
     mfa_session_json = request.cookies.get("mfa_token")
     if not mfa_session_json:
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
     
     try:
         session_data = json.loads(mfa_session_json)
     except json.JSONDecodeError:
-        return RedirectResponse("web/", status_code=303)
+        return RedirectResponse("/web/", status_code=303)
 
     username = session_data["username"]
     session_token = session_data["session"]
@@ -555,7 +556,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
 
     tokens = resp.json()
     id_token = tokens["IdToken"]
-    response = RedirectResponse("web/dashboard", status_code=303)
+    response = RedirectResponse("/web/dashboard", status_code=303)
 
     response.set_cookie(
         key="session_token",
@@ -563,7 +564,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         httponly=True,
         secure=False, 
         samesite="lax",
-        path="web/",
+        path="/web/",
         domain=API_DOMAIN,
     )
     response.set_cookie(
@@ -572,7 +573,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         httponly=True,
         secure=False, 
         samesite="lax",
-        path="web/",
+        path="/web/",
         domain=API_DOMAIN,
     )
     return response

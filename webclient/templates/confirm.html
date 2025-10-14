@@ -8,7 +8,7 @@
   {% if error %}
     <p style="color:red">{{ error }}</p>
   {% endif %}
-  <form action="web/confirm" method="post">
+  <form action="/web/confirm" method="post">
     <label>Username:</label>
     <input type="text" name="username" required><br>
     <label>Confirmation Code:</label>
@@ -16,7 +16,7 @@
     <button type="submit">Confirm</button>
   </form>
   <p>Already have an account? <a href="/">Login</a></p>
-  <p>Need to sign up? <a href="web/signup">Sign Up</a></p>
+  <p>Need to sign up? <a href="/web/signup">Sign Up</a></p>
 </body>
 </html>
 
