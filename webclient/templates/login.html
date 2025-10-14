@@ -11,7 +11,7 @@
   {% if message %}
     <p style="color:green">{{ message }}</p>
   {% endif %}
-  <form action="/login" method="post">
+  <form action="web/login" method="post">
     <label>Username:</label>
     <input type="text" name="username" required><br>
     <label>Password:</label>
@@ -25,8 +25,8 @@
     <button type="button">Sign in with Google</button>
   </a>
 
-  <p>Don't have an account? <a href="/signup">Sign Up</a></p>
-  <p>Need to confirm email? <a href="/confirm">Confirm Email</a></p>
+  <p>Don't have an account? <a href="web/signup">Sign Up</a></p>
+  <p>Need to confirm email? <a href="web/confirm">Confirm Email</a></p>
 </body>
 </html>
 

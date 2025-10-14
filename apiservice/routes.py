@@ -10,7 +10,8 @@ from controllers import (
     get_all_videos,
     upload_video,
     transcode_video,
-    delete_video
+    delete_video,
+    update_status_progress
 )
 from pstore import load_parameters
 
@@ -155,3 +156,11 @@ async def stream_progress(video_id: str, current_user: dict = Depends(get_curren
             return
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@router.post("/videos/{video_id}/status")
+async def update_video_status(video_id: str, data: dict):
+    status = data.get("status")
+    progress = data.get("progress", 0)
+    fmt = data.get("format")
+    update_status_progress(None, video_id, status=status, progress=progress, format=fmt)
+    return {"message": "Status updated"}

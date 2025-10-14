@@ -46,12 +46,12 @@
 </head>
 <body>
   <h1>User Dashboard</h1>
-  <form action="/logout" method="get" style="margin-bottom:20px;">
+  <form action="web/logout" method="get" style="margin-bottom:20px;">
     <button type="submit" style="background:#6c757d">Sign Out</button>
   </form>
 
   <div class="filters">
-    <form method="get" action="/dashboard">
+    <form method="get" action="web/dashboard">
       <input type="text" name="search" placeholder="Search filename" value="{{ search or '' }}">
       <select name="sort_by">
         <option value="created_at" {% if sort_by=='created_at' %}selected{% endif %}>Created At</option>
@@ -81,20 +81,20 @@
     <!-- Live progress bar -->
     <progress id="progress-{{ v.video_id }}" value="0" max="100"></progress>
 
-    <form action="/update_metadata/{{ v.video_id }}" method="post">
+    <form action="web/update_metadata/{{ v.video_id }}" method="post">
       <input type="text" name="title" placeholder="Title" value="{{ v.get('title','') }}">
       <input type="text" name="description" placeholder="Description" value="{{ v.get('description','') }}">
       <button type="submit">Update Metadata</button>
     </form>
 
     <div class="video-actions">
-      <form action="/transcode/{{ v.video_id }}/mp4" method="post">
+      <form action="web/transcode/{{ v.video_id }}/mp4" method="post">
         <button type="submit">Transcode</button>
       </form>
-      <form action="/delete/{{ v.video_id }}" method="post">
+      <form action="web/delete/{{ v.video_id }}" method="post">
         <button type="submit" style="background:#dc3545">Delete</button>
       </form>
-      <a href="/download/{{ v.video_id }}">
+      <a href="web/download/{{ v.video_id }}">
         <button type="button" style="background:#28a745">Download</button>
       </a>
     </div>
@@ -132,12 +132,12 @@
 
   <div class="pagination" style="margin-top:20px;">
     {% if skip > 0 %}
-      <a href="/dashboard?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
+      <a href="web/dashboard?skip={{ max(skip-limit,0) }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
         <button type="button">&lt; Previous</button>
       </a>
     {% endif %}
     {% if videos|length >= limit %}
-      <a href="/dashboard?skip={{ skip+limit }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
+      <a href="web/dashboard?skip={{ skip+limit }}&limit={{ limit }}&sort_by={{ sort_by }}&order={{ order }}&search={{ search or '' }}">
         <button type="button">Next &gt;</button>
       </a>
     {% endif %}
@@ -167,7 +167,7 @@
       formData.append("filename", file.name);
       formData.append("content_type", file.type);
 
-      const presignResp = await fetch(`/upload`, {
+      const presignResp = await fetch(`web/upload`, {
           method: "POST",
           body: formData
       });
