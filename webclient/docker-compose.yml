@@ -1,0 +1,7 @@
+services:
+  video-client:
+    build: .
+    ports:
+      - "3002:3002"
+    environment:
+      - AWS_REGION=ap-southeast-2

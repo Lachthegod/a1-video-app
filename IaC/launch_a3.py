@@ -38,7 +38,7 @@ sudo usermod -aG docker ubuntu
 cd /home/ubuntu
 git clone https://github.com/Lachthegod/a1-video-app.git
 sudo chown -R ubuntu:ubuntu /home/ubuntu/a1-video-app
-cd a1-video-app/apiservice
+cd a1-video-app/{container_name}
 
 # Run docker compose
 sudo docker compose up -d --build
@@ -46,18 +46,16 @@ sudo docker compose up -d --build
 
 # Define the microservices
 microservices = [
-    {"name": "apiservice", "dockerfile": "a1-video-app/apiservice/Dockerfile", "port": "3000"},
-    # {"name": "webclient", "dockerfile": "a1-video-app/webclient/Dockerfile"},
-    # {"name": "loginservice", "dockerfile": "a1-video-app/loginservice/Dockerfile"},
+    {"name": "apiservice"},
+    {"name": "webclient"},
+    {"name": "loginservice"},
     # {"name": "videoworker", "dockerfile": "videoworker/Dockerfile"},
 ]
 
 # Launch each EC2 instance
 for svc in microservices:
     user_data = user_data_script.format(
-        dockerfile_path=svc["dockerfile"],
         container_name=svc["name"],
-        port=svc["port"],
     )
 
     response = ec2.run_instances(

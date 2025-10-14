@@ -1,0 +1,9 @@
+fastapi           
+uvicorn 
+boto3
+python-multipart
+pydantic
+botocore
+python-jose[cryptography]
+PyJWT
+requests

@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, HTTPException, Body
-from loginservice.cognito import (
+from cognito import (
     sign_up_user, confirm_user, authenticate_user, respond_to_mfa_challenge
 )
 import requests
@@ -8,7 +8,7 @@ import os
 import jwt
 from jose import jwk, jwt as jose_jwt, JWTError
 from jose.utils import base64url_decode
-from loginservice.pstore import load_parameters
+from pstore import load_parameters
 
 
 

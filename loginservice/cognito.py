@@ -2,7 +2,6 @@ import boto3
 import hmac
 import hashlib
 import base64
-import os
 import json
 from botocore.exceptions import ClientError
 from loginservice.pstore import load_parameters

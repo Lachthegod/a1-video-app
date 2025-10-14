@@ -1,7 +1,6 @@
 import os
 from fastapi import FastAPI
-from videoapi.routes import router as api_router
-from videoapi import routes_auth  
+from routes_auth import router as api_router
 
 app = FastAPI(
     title="Video Stream API",
@@ -10,9 +9,8 @@ app = FastAPI(
 )
 
 
-app.include_router(api_router, prefix="/videos")
-app.include_router(routes_auth.router, prefix="/auth")  
+app.include_router(api_router, prefix="/auth")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=3000)
+    uvicorn.run(app, host="0.0.0.0", port=3002)
