@@ -50,7 +50,9 @@ logging.basicConfig(level=logging.INFO)
 
 
 templates = Jinja2Templates(directory="templates")
-API_BASE = "http://video-api:3000"
+API_BASE_AUTH = "http://n11715910-a2-auth.cab432.com:3002"
+API_BASE = "http://n11715910-a2-base.cab432.com:3000"
+
 # -----------------------------
 # Async JWKS fetch
 # -----------------------------
