@@ -25,7 +25,7 @@ parameters = load_parameters()
 COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
 COGNITO_USERPOOL_ID = parameters.get("cognitouserpoolid")
 COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
-API_DOMAIN = "https://transcoding-n11715910.cab432.com"
+API_DOMAIN = "transcoding-n11715910.cab432.com"
 REDIRECT_URI = parameters.get("redirecturl")
 COGNITO_DOMAIN = parameters.get("cognitodomain")
 
@@ -152,13 +152,13 @@ def get_secret(secret_name="n11715910-cognito", region_name=COGNITO_REGION):
 # -----------------------------
 # Routes
 # -----------------------------
-@app.get("/web/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "google_login_url": GOOGLE_LOGIN_URL})
 
 
 
-@app.post("/web/login")
+@app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(f"{API_BASE_AUTH}/auth/login", json={"username": username, "password": password})
@@ -211,7 +211,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 # Dashboard
 # -----------------------------
 
-@app.get("/web/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     logging.info(f"=== /dashboard endpoint hit ===")
 
@@ -307,7 +307,7 @@ async def dashboard(request: Request):
 # Dashboard via temp session_id 
 # -----------------------------
 
-@app.get("/web/dashboard/{session_id}")
+@app.get("/dashboard/{session_id}")
 async def dashboard_session(session_id: str):
     tokens = TEMP_SESSIONS.pop(session_id, None)
     if not tokens:
@@ -322,7 +322,7 @@ async def dashboard_session(session_id: str):
 # Upload video
 # -----------------------------
 
-@app.post("/web/upload")
+@app.post("/upload")
 async def upload(request: Request, filename: str = Form(...), content_type: str = Form(...)):
     id_token = request.cookies.get("session_token")
     access_token = request.cookies.get("access_token")
@@ -359,7 +359,7 @@ async def upload(request: Request, filename: str = Form(...), content_type: str 
 # -----------------------------
 # Delete video
 # -----------------------------
-@app.post("/web/delete/{video_id}")
+@app.post("/delete/{video_id}")
 async def delete(request: Request, video_id: str):
 
     id_token = request.cookies.get("session_token")
@@ -383,7 +383,7 @@ async def delete(request: Request, video_id: str):
 # -----------------------------
 # Transcode video
 # -----------------------------
-@app.post("/web/transcode/{video_id}/{fmt}")
+@app.post("/transcode/{video_id}/{fmt}")
 async def transcode(request: Request, video_id: str, fmt: str):
 
     id_token = request.cookies.get("session_token")
@@ -412,7 +412,7 @@ async def transcode(request: Request, video_id: str, fmt: str):
 # -----------------------------
 # Update metadata
 # -----------------------------
-@app.post("/web/update_metadata/{video_id}")
+@app.post("/update_metadata/{video_id}")
 async def update_metadata(
     request: Request,
     video_id: str,
@@ -449,7 +449,7 @@ async def update_metadata(
 # -----------------------------
 # Logout
 # -----------------------------
-@app.get("/web/logout")
+@app.get("/logout")
 async def logout():
     response = RedirectResponse("/web/", status_code=303)
     response.delete_cookie(key="session_token")
@@ -460,11 +460,11 @@ async def logout():
 # -----------------------------
 # Signup
 # -----------------------------
-@app.get("/web/signup", response_class=HTMLResponse)
+@app.get("/signup", response_class=HTMLResponse)
 async def signup_page(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
 
-@app.post("/web/signup")
+@app.post("/signup")
 async def signup(request: Request, username: str = Form(...), password: str = Form(...), email: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -480,11 +480,11 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
 # -----------------------------
 # Confirm account
 # -----------------------------
-@app.get("/web/confirm", response_class=HTMLResponse)
+@app.get("/confirm", response_class=HTMLResponse)
 async def confirm_page(request: Request):
     return templates.TemplateResponse("confirm.html", {"request": request})
 
-@app.post("/web/confirm")
+@app.post("/confirm")
 async def confirm(request: Request, username: str = Form(...), code: str = Form(...)):
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -497,7 +497,7 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
     return RedirectResponse("/web/", status_code=303)
 
 
-@app.get("/web/download/{video_id}")
+@app.get("/download/{video_id}")
 async def download(request: Request, video_id: str):
     id_token = request.cookies.get("session_token")
     access_token = request.cookies.get("access_token")
@@ -523,11 +523,11 @@ async def download(request: Request, video_id: str):
         return RedirectResponse(download_url)
 
 # --- MFA routes ---
-@app.get("/web/mfa", response_class=HTMLResponse)
+@app.get("/mfa", response_class=HTMLResponse)
 async def mfa_page(request: Request):
     return templates.TemplateResponse("mfa.html", {"request": request})
 
-@app.post("/web/mfa")
+@app.post("/mfa")
 async def mfa_submit(request: Request, code: str = Form(...)):
     mfa_session_json = request.cookies.get("mfa_token")
     if not mfa_session_json:
