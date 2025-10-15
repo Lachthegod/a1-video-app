@@ -179,7 +179,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
                 httponly=True,
                 secure=False,
                 samesite="lax",
-                path="/web/",
+                path="/",
                 domain=API_DOMAIN,
             )
             return response
@@ -192,7 +192,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             httponly=True,
             secure=False, 
             samesite="lax",
-            path="/web/",
+            path="/",
             domain=API_DOMAIN,
         )
         response.set_cookie(
@@ -201,7 +201,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             httponly=True,
             secure=False, 
             samesite="lax",
-            path="/web/",
+            path="/",
             domain=API_DOMAIN,
         )
         return response
@@ -314,8 +314,8 @@ async def dashboard_session(session_id: str):
         raise HTTPException(400, "Session expired")
 
     response = RedirectResponse("/web/dashboard")
-    response.set_cookie("session_token", tokens["IdToken"], httponly=True, path="/web/")
-    response.set_cookie("access_token", tokens["AccessToken"], httponly=True, path="/web/")
+    response.set_cookie("session_token", tokens["IdToken"], httponly=True, path="/")
+    response.set_cookie("access_token", tokens["AccessToken"], httponly=True, path="/")
     return response
 
 # -----------------------------
@@ -564,7 +564,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         httponly=True,
         secure=False, 
         samesite="lax",
-        path="/web/",
+        path="/",
         domain=API_DOMAIN,
     )
     response.set_cookie(
@@ -573,7 +573,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         httponly=True,
         secure=False, 
         samesite="lax",
-        path="/web/",
+        path="/",
         domain=API_DOMAIN,
     )
     return response
