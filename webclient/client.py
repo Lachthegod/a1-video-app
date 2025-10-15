@@ -25,7 +25,7 @@ parameters = load_parameters()
 COGNITO_REGION = parameters.get("awsregion", "ap-southeast-2")
 COGNITO_USERPOOL_ID = parameters.get("cognitouserpoolid")
 COGNITO_CLIENT_ID = parameters.get("cognitoclientid")
-API_DOMAIN = parameters.get("domain")
+API_DOMAIN = "https://transcoding-n11715910.cab432.com"
 REDIRECT_URI = parameters.get("redirecturl")
 COGNITO_DOMAIN = parameters.get("cognitodomain")
 
@@ -51,8 +51,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 templates = Jinja2Templates(directory="templates")
-API_BASE_AUTH = "http://n11715910-a2-auth.cab432.com:3002"
-API_BASE = "http://n11715910-a2-base.cab432.com:3000"
+API_BASE_AUTH = "https://transcoding-n11715910.cab432.com"
+API_BASE = "https://transcoding-n11715910.cab432.com"
 
 # -----------------------------
 # Async JWKS fetch
@@ -177,7 +177,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
                 key="mfa_token",
                 value=json.dumps(mfa_payload),
                 httponly=True,
-                secure=False,
+                secure=True,
                 samesite="lax",
                 path="/",
                 domain=API_DOMAIN,
@@ -190,7 +190,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             key="session_token",
             value=token,
             httponly=True,
-            secure=False, 
+            secure=True, 
             samesite="lax",
             path="/",
             domain=API_DOMAIN,
@@ -199,7 +199,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             key="access_token",
             value=token,
             httponly=True,
-            secure=False, 
+            secure=True, 
             samesite="lax",
             path="/",
             domain=API_DOMAIN,
@@ -562,7 +562,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         key="session_token",
         value=id_token,
         httponly=True,
-        secure=False, 
+        secure=True, 
         samesite="lax",
         path="/",
         domain=API_DOMAIN,
@@ -571,7 +571,7 @@ async def mfa_submit(request: Request, code: str = Form(...)):
         key="access_token",
         value=id_token,
         httponly=True,
-        secure=False, 
+        secure=True, 
         samesite="lax",
         path="/",
         domain=API_DOMAIN,

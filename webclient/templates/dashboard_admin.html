@@ -119,7 +119,7 @@
       <td>{{ t.timestamp }}</td>
       <td>
         {% if t.status == 'failed' %}
-        <form action="/web/rerun/{{ t.video_id }}/{{ t.format }}" method="post">
+        <form action="/rerun/{{ t.video_id }}/{{ t.format }}" method="post">
           <button type="submit" class="rerun">Re-run</button>
         </form>
         {% endif %}
@@ -146,7 +146,7 @@
     formData.append("filename", file.name);
     formData.append("content_type", file.type);
 
-    const presignResp = await fetch(`/web/upload`, {
+    const presignResp = await fetch(`/upload`, {
         method: "POST",
         body: formData
     });
