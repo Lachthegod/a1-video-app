@@ -152,7 +152,7 @@ def get_secret(secret_name="n11715910-cognito", region_name=COGNITO_REGION):
 # -----------------------------
 # Routes
 # -----------------------------
-@app.get("/", response_class=HTMLResponse)
+@app.get("/web", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "google_login_url": GOOGLE_LOGIN_URL})
 
@@ -221,7 +221,7 @@ async def dashboard(request: Request):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -232,7 +232,7 @@ async def dashboard(request: Request):
     username, role = await decode_jwt(id_token, access_token)
     if not username:
         logging.warning(f"Failed to decode JWT from cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     logging.info(f"Decoded JWT → username={username}, role={role}")
 
@@ -264,8 +264,8 @@ async def dashboard(request: Request):
                 "owner": owner_filter,
                 "search": search,
             }
-            logging.info(f"Requesting videos from API → {API_BASE}/videos/ with params={params}")
-            resp = await client.get(f"{API_BASE}/videos/", headers=headers, params=params)
+            logging.info(f"Requesting videos from API → {API_BASE}/videos/list with params={params}")
+            resp = await client.get(f"{API_BASE}/videos/list", headers=headers, params=params)
             logging.info(f"API /videos/ response status={resp.status_code}")
 
             resp_json = resp.json()
@@ -329,7 +329,7 @@ async def upload(request: Request, filename: str = Form(...), content_type: str 
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
     
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -339,7 +339,7 @@ async def upload(request: Request, filename: str = Form(...), content_type: str 
 
     async with httpx.AsyncClient() as client:
         presign_resp = await client.post(
-            f"{API_BASE}/videos/",
+            f"{API_BASE}/videos/list",
             headers=headers,
             json={"filename": filename, "content_type": content_type},
         )
@@ -367,7 +367,7 @@ async def delete(request: Request, video_id: str):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -391,7 +391,7 @@ async def transcode(request: Request, video_id: str, fmt: str):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies using IdToken as fallback")
@@ -424,7 +424,7 @@ async def update_metadata(
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies using IdToken as fallback")
@@ -451,7 +451,7 @@ async def update_metadata(
 # -----------------------------
 @app.get("/logout")
 async def logout():
-    response = RedirectResponse("/web/", status_code=303)
+    response = RedirectResponse("/web/web", status_code=303)
     response.delete_cookie(key="session_token")
     response.delete_cookie(key="access_token")
     return response
@@ -494,7 +494,7 @@ async def confirm(request: Request, username: str = Form(...), code: str = Form(
 
     if resp.status_code != 200:
         return templates.TemplateResponse("confirm.html", {"request": request, "error": await resp.text()})
-    return RedirectResponse("/web/", status_code=303)
+    return RedirectResponse("/web/web", status_code=303)
 
 
 @app.get("/download/{video_id}")
@@ -504,7 +504,7 @@ async def download(request: Request, video_id: str):
 
     if not id_token:
         logging.warning("No IdToken found in cookies")
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     if not access_token:
         logging.warning("No AccessToken found in cookies; using IdToken as fallback")
@@ -531,12 +531,12 @@ async def mfa_page(request: Request):
 async def mfa_submit(request: Request, code: str = Form(...)):
     mfa_session_json = request.cookies.get("mfa_token")
     if not mfa_session_json:
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
     
     try:
         session_data = json.loads(mfa_session_json)
     except json.JSONDecodeError:
-        return RedirectResponse("/web/", status_code=303)
+        return RedirectResponse("/web/web", status_code=303)
 
     username = session_data["username"]
     session_token = session_data["session"]

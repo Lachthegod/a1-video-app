@@ -146,7 +146,7 @@
     formData.append("filename", file.name);
     formData.append("content_type", file.type);
 
-    const presignResp = await fetch(`/upload`, {
+    const presignResp = await fetch(`/web/upload`, {
         method: "POST",
         body: formData
     });

@@ -27,7 +27,7 @@ S3_BUCKET = parameters.get("s3bucket")
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 
-@router.get("/")
+@router.get("/list")
 async def list_videos(
     current_user: dict = Depends(get_current_user),
     skip: int = 0,
@@ -79,7 +79,7 @@ async def get_video_route(video_id: str, current_user: dict = Depends(get_curren
     return video
 
 
-@router.post("/")
+@router.post("/list")
 async def upload_video_route(
     request: Request,
     current_user: dict = Depends(get_current_user)
