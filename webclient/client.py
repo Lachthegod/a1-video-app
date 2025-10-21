@@ -631,7 +631,7 @@ async def auth_callback(request: Request, code: str = None, state: str = None):
     }
     logging.info("Stored tokens in SESSIONS")
 
-    redirect_url = f"http://{API_DOMAIN}:3001/dashboard/{session_id}"
+    redirect_url = f"https://transcoding-n11715910.cab432.com/web/dashboard/{session_id}"
     logging.info(f"Redirecting user to {redirect_url}")
 
     return RedirectResponse(redirect_url, status_code=303)

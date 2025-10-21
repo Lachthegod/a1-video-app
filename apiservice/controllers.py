@@ -112,9 +112,6 @@ async def transcode_video(video_id, request: Request, background_tasks: Backgrou
     sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(message))
 
     update_status(current_user["id"], video_id, status="transcoding")
-    # background_tasks.add_task(
-    #     transcode_and_update, video_id, input_key, output_key, output_format, current_user["id"]
-    # )
     return {"message": "Transcoding started", "video_id": video_id}
 
 
