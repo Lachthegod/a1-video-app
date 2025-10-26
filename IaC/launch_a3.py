@@ -47,8 +47,8 @@ sudo docker compose up -d --build
 # Define the microservices
 microservices = [
     {"name": "apiservice"},
-    {"name": "webclient"},
-    {"name": "loginservice"},
+    # {"name": "webclient"},
+    # {"name": "loginservice"},
     # {"name": "videoworker", "dockerfile": "videoworker/Dockerfile"},
 ]
 

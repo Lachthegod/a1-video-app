@@ -98,37 +98,24 @@ async def transcode_video(video_id, request: Request, background_tasks: Backgrou
 
     input_key = video["filepath"]
     base_name, _ = os.path.splitext(video["filename"])
+    # output_key = f"transcoded/{base_name}_{output_format}.{output_format}"
 
-    # -----------------------------
-    # Get file size from S3
-    # -----------------------------
-    try:
-        head_resp = s3_client.head_object(Bucket=S3_BUCKET, Key=input_key)
-        file_size_bytes = head_resp['ContentLength']
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get file size from S3: {e}")
 
-    # -----------------------------
-    # Build SQS message
-    # -----------------------------
+    
+
     message = {
         "video_id": video_id,
         "input_key": input_key,
         "filename": base_name,
         "output_format": output_format,
-        "user_id": current_user["id"],
-        "file_size_bytes": file_size_bytes  
+        "user_id": current_user["id"]
     }
 
     # Send to SQS
-    try:
-        sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(message))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send message to SQS: {e}")
+    sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(message))
 
     update_status(current_user["id"], video_id, status="transcoding")
-    return {"message": "Transcoding started", "video_id": video_id, "file_size_bytes": file_size_bytes}
-
+    return {"message": "Transcoding started", "video_id": video_id}
 
 
 
