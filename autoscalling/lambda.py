@@ -28,13 +28,19 @@ cloudwatch = boto3.client("cloudwatch", region_name=REGION)
 # -----------------------------
 def lambda_handler(event, context):
     try:
-        # 1. Get current queue size
+        # 1. Get current queue size including hidden/in-flight messages
         attrs = sqs.get_queue_attributes(
             QueueUrl=QUEUE_URL,
-            AttributeNames=['ApproximateNumberOfMessages']
+            AttributeNames=[
+                'ApproximateNumberOfMessages',
+                'ApproximateNumberOfMessagesNotVisible'
+            ]
         )
-        queue_size = int(attrs['Attributes'].get('ApproximateNumberOfMessages', 0))
-        logger.info(f"Queue size: {queue_size}")
+
+        visible = int(attrs['Attributes'].get('ApproximateNumberOfMessages', 0))
+        not_visible = int(attrs['Attributes'].get('ApproximateNumberOfMessagesNotVisible', 0))
+        queue_size = visible + not_visible
+        logger.info(f"Queue size (including in-flight messages): {queue_size}")
 
         # 2. Publish SQS backlog as a custom CloudWatch metric
         cloudwatch.put_metric_data(

@@ -157,7 +157,7 @@ async def stream_progress(video_id: str, current_user: dict = Depends(get_curren
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-@router.post("/videos/{video_id}/status")
+@router.post("/{video_id}/status")
 async def update_video_status(video_id: str, data: dict):
     status = data.get("status")
     progress = data.get("progress", 0)
