@@ -48,7 +48,7 @@ sudo docker compose up -d --build
 microservices = [
     {"name": "apiservice"},
     {"name": "webclient"},
-    # {"name": "loginservice"},
+    {"name": "loginservice"},
     # {"name": "videoworker", "dockerfile": "videoworker/Dockerfile"},
 ]
 

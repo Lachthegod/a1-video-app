@@ -1,3 +1,4 @@
+import time
 import boto3
 import json
 import subprocess
@@ -8,7 +9,7 @@ import requests
 REGION = "ap-southeast-2"
 QUEUE_URL = "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11715910-a2"
 S3_BUCKET = "n11715910-a2"
-API_BASE = "https://transcoding-n11715910.cab432.com"   # your Route53/ALB domain
+API_BASE = "https://transcoding-n11715910.cab432.com"
 
 sqs = boto3.client('sqs', region_name=REGION)
 s3 = boto3.client('s3', region_name=REGION)
@@ -30,6 +31,7 @@ def process_message(task):
     input_key = task["input_key"]
     user_id = task["user_id"]
 
+    print(f"[INFO] Processing video {video_id} in format {output_format}")
     update_api(video_id, "transcoding", 0)
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp_in:
@@ -45,61 +47,41 @@ def process_message(task):
     )
 
     if process.returncode == 0:
+        print(f"[INFO] Uploading transcoded file to S3: {output_key}")
         s3.upload_file(output_path, S3_BUCKET, output_key)
         update_api(video_id, "done", 100, output_format)
     else:
+        print(f"[ERROR] ffmpeg failed for {filename}: {process.stderr[:200]}")
         update_api(video_id, "failed", 0)
 
     os.remove(input_path)
     os.remove(output_path)
 
-
 def poll_queue():
     while True:
         response = sqs.receive_message(
-            QueueUrl=QUEUE_URL, MaxNumberOfMessages=1, WaitTimeSeconds=600
+            QueueUrl=QUEUE_URL,
+            MaxNumberOfMessages=1,
+            WaitTimeSeconds=20,
+            VisibilityTimeout=900
         )
         messages = response.get('Messages', [])
-
-        #delete message from SQS
         if messages:
             for msg in messages:
-                task = json.loads(msg["Body"])
                 try:
+                    task = json.loads(msg["Body"])
                     process_message(task)
-                except Exception as e:
-                    print(f"[ERROR] Processing failed for {task['video_id']}: {e}")
-                finally:
-                    # Always delete message to avoid retries
                     sqs.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=msg["ReceiptHandle"])
-
+                except Exception as e:
+                    print(f"[ERROR] Failed to process message: {e}")
+        else:
+            print("[INFO] No messages available. Sleeping 10s.")
+            time.sleep(10)
 
 if __name__ == "__main__":
     poll_queue()
 
-# def poll_queue():
-#     empty_polls = 0
-#     max_empty_polls = 6  # e.g. 6 × 10s = 1 minute idle before exit
 
-#     while True:
-#         response = sqs.receive_message(
-#             QueueUrl=QUEUE_URL,
-#             MaxNumberOfMessages=1,
-#             WaitTimeSeconds=10
-#         )
-#         messages = response.get('Messages', [])
-#         if messages:
-#             empty_polls = 0  # reset since we have work
-#             for msg in messages:
-#                 task = json.loads(msg["Body"])
-#                 process_message(task)
-#                 sqs.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=msg["ReceiptHandle"])
-#         else:
-#             empty_polls += 1
-#             if empty_polls >= max_empty_polls:
-#                 print("Queue idle for too long. Exiting worker...")
-#                 break  # let ECS terminate task normally
-#             time.sleep(10)
 
 
 

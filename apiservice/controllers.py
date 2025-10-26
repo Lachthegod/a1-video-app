@@ -98,93 +98,37 @@ async def transcode_video(video_id, request: Request, background_tasks: Backgrou
 
     input_key = video["filepath"]
     base_name, _ = os.path.splitext(video["filename"])
-    # output_key = f"transcoded/{base_name}_{output_format}.{output_format}"
 
+    # -----------------------------
+    # Get file size from S3
+    # -----------------------------
+    try:
+        head_resp = s3_client.head_object(Bucket=S3_BUCKET, Key=input_key)
+        file_size_bytes = head_resp['ContentLength']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get file size from S3: {e}")
+
+    # -----------------------------
+    # Build SQS message
+    # -----------------------------
     message = {
         "video_id": video_id,
         "input_key": input_key,
         "filename": base_name,
         "output_format": output_format,
-        "user_id": current_user["id"]
+        "user_id": current_user["id"],
+        "file_size_bytes": file_size_bytes  
     }
 
     # Send to SQS
-    sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(message))
+    try:
+        sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(message))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send message to SQS: {e}")
 
     update_status(current_user["id"], video_id, status="transcoding")
-    return {"message": "Transcoding started", "video_id": video_id}
+    return {"message": "Transcoding started", "video_id": video_id, "file_size_bytes": file_size_bytes}
 
-
-# def transcode_and_update(video_id, input_key, output_key, output_format, user_id):
-#     input_path = None
-#     output_path = None
-#     try:
-#         with tempfile.NamedTemporaryFile(delete=False) as tmp_in:
-#             s3_client.download_file(S3_BUCKET, input_key, tmp_in.name)
-#             input_path = tmp_in.name
-
-#         tmp_out = tempfile.NamedTemporaryFile(delete=False, suffix=f".{output_format}")
-#         output_path = tmp_out.name
-#         tmp_out.close()
-
-#         result = subprocess.run(
-#             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-#              "-of", "default=noprint_wrappers=1:nokey=1", input_path],
-#             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-#         )
-#         try:
-#             total_duration = float(result.stdout.strip())
-#         except ValueError:
-#             total_duration = 1  
-
-#         if total_duration == 0:
-#             total_duration = 1  
-
-#         process = subprocess.Popen(
-#             [
-#                 "ffmpeg",
-#                 "-i", input_path,
-#                 "-c:v", "libx264",
-#                 "-c:a", "aac",
-#                 "-y",
-#                 output_path,
-#                 "-progress", "pipe:1",
-#                 "-nostats"
-#             ],
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE,
-#             text=True,
-#             bufsize=1
-#         )
-
-#         update_status_progress(user_id, video_id, status="transcoding", progress=0)
-
-#         for line in iter(process.stdout.readline, ''):
-#             line = line.strip()
-#             if line.startswith("out_time_ms"):
-#                 ms_str = line.split('=')[1]
-#                 if ms_str.isdigit():
-#                     ms = int(ms_str)
-#                     progress = min(int(ms / (total_duration * 1_000_000) * 100), 100)
-#                     update_status_progress(user_id, video_id, status="transcoding", progress=progress)
-
-#         process.wait()
-
-#         if process.returncode == 0 and os.path.exists(output_path):
-#             s3_client.upload_file(output_path, S3_BUCKET, output_key)
-#             update_status_progress(user_id, video_id, status="done", progress=100, format=output_format)
-#         else:
-#             update_status_progress(user_id, video_id, status="failed", progress=0)
-
-#     except Exception as e:
-#         update_status_progress(user_id, video_id, status="failed-E", progress=0)
-#         print(f"Transcoding failed: {e}")
-
-#     finally:
-#         if input_path and os.path.exists(input_path):
-#             os.remove(input_path)
-#         if output_path and os.path.exists(output_path):
-#             os.remove(output_path)
 
 
 

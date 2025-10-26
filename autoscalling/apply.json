@@ -1,0 +1,21 @@
+{
+  "ServiceNamespace": "ecs",
+  "ResourceId": "service/n11715910-a3/n11715910-a3-transcoder-service",
+  "ScalableDimension": "ecs:service:DesiredCount",
+  "PolicyName": "SQSQueueBacklogScaling",
+  "PolicyType": "TargetTrackingScaling",
+  "TargetTrackingScalingPolicyConfiguration": {
+    "TargetValue": 1.0,
+    "CustomizedMetricSpecification": {
+      "MetricName": "SQSQueueBacklog",
+      "Namespace": "Custom/ECSAutoscaling",
+      "Dimensions": [
+        {"Name": "QueueName", "Value": "n11715910-a2"}
+      ],
+      "Statistic": "Average",
+      "Unit": "Count"
+    },
+    "ScaleInCooldown": 60,
+    "ScaleOutCooldown": 60
+  }
+}
