@@ -58,6 +58,8 @@ def process_message(task):
     os.remove(output_path)
 
 def poll_queue():
+    required_fields = ["video_id", "output_format", "filename", "input_key"]
+
     while True:
         response = sqs.receive_message(
             QueueUrl=QUEUE_URL,
@@ -65,18 +67,31 @@ def poll_queue():
             WaitTimeSeconds=20,
             VisibilityTimeout=900
         )
+
         messages = response.get('Messages', [])
+
         if messages:
             for msg in messages:
                 try:
                     task = json.loads(msg["Body"])
+
+                    # Validate message
+                    if not all(field in task for field in required_fields):
+                        update_api(task.get("video_id"), "Cannot process, upload again", 0)
+                        continue
+
+                    # Process valid message
                     process_message(task)
-                    sqs.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=msg["ReceiptHandle"])
+                    sqs.delete_message(
+                        QueueUrl=QUEUE_URL,
+                        ReceiptHandle=msg["ReceiptHandle"]
+                    )
                 except Exception as e:
                     print(f"[ERROR] Failed to process message: {e}")
         else:
             print("[INFO] No messages available. Sleeping 10s.")
             time.sleep(10)
+
 
 if __name__ == "__main__":
     poll_queue()
