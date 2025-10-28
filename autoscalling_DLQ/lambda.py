@@ -2,33 +2,24 @@ import boto3
 import os
 import logging
 
-# -----------------------------
-# Logging setup
-# -----------------------------
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# -----------------------------
-# Configuration
-# -----------------------------
 REGION = "ap-southeast-2"
 QUEUE_URL = os.environ.get(
     "QUEUE_URL",
     "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11715910-a2"
 )
 
-# -----------------------------
-# AWS clients
-# -----------------------------
+SCALE_FACTOR = 1
+FIXED_INSTANCES = int(os.environ.get("FIXED_INSTANCES", 1))
+
 sqs = boto3.client("sqs", region_name=REGION)
 cloudwatch = boto3.client("cloudwatch", region_name=REGION)
 
-# -----------------------------
-# Lambda handler
-# -----------------------------
 def lambda_handler(event, context):
     try:
-        # 1. Get current queue size including hidden/in-flight messages
+        # Get both visible and in-flight messages
         attrs = sqs.get_queue_attributes(
             QueueUrl=QUEUE_URL,
             AttributeNames=[
@@ -36,27 +27,27 @@ def lambda_handler(event, context):
                 'ApproximateNumberOfMessagesNotVisible'
             ]
         )
+        visible_messages = int(attrs['Attributes'].get('ApproximateNumberOfMessages', 0))
+        invisible_messages = int(attrs['Attributes'].get('ApproximateNumberOfMessagesNotVisible', 0))
+        total_messages = visible_messages + invisible_messages
+        logger.info(f"Total messages in queue (visible + in-flight): {total_messages}")
 
-        visible = int(attrs['Attributes'].get('ApproximateNumberOfMessages', 0))
-        not_visible = int(attrs['Attributes'].get('ApproximateNumberOfMessagesNotVisible', 0))
-        queue_size = visible + not_visible
-        logger.info(f"Queue size (including in-flight messages): {queue_size}")
+        in_service_instances = max(FIXED_INSTANCES, 1) 
+        logger.info(f"Using fixed instance count: {in_service_instances}")
 
-        # 2. Publish SQS backlog as a custom CloudWatch metric
+        messages_per_instance = (total_messages * SCALE_FACTOR) / in_service_instances
+        logger.info(f"Messages per instance (weighted): {messages_per_instance}")
+
         cloudwatch.put_metric_data(
             Namespace='Custom/ECSAutoscaling',
-            MetricData=[
-                {
-                    'MetricName': 'SQSQueueBacklog',
-                    'Dimensions': [
-                        {'Name': 'QueueName', 'Value': QUEUE_URL.split('/')[-1]}
-                    ],
-                    'Unit': 'Count',
-                    'Value': queue_size
-                }
-            ]
+            MetricData=[{
+                'MetricName': 'MessagesPerInstance',
+                'Dimensions': [{'Name': 'QueueName', 'Value': QUEUE_URL.split('/')[-1]}],
+                'Unit': 'Count',
+                'Value': messages_per_instance
+            }]
         )
-        logger.info(f"Published custom CloudWatch metric: {queue_size}")
+        logger.info("Published custom CloudWatch metric: MessagesPerInstance")
 
     except Exception as e:
         logger.exception(f"Error in ECS autoscaling Lambda: {e}")
